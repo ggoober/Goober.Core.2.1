@@ -4,6 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Goober.Core</AssemblyName>
     <RootNamespace>Goober.Core</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>ggooss</Authors>
+    <Company>ggooss</Company>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Core", "Goober.Core\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Core.Tests", "Goober.Core.Tests\Goober.Core.Tests.csproj", "{694F3A8B-586F-42C2-BE04-02D2349B2BCD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Goober.Swagger", "Goober.Swagger\Goober.Swagger.csproj", "{23855EE4-C71A-4F26-B10C-296F94CFF43E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
