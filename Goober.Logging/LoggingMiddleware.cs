@@ -24,6 +24,7 @@ namespace Goober.Logging
             context.Items["RESPONSE_CODE"] = context.Response?.StatusCode.ToString();
             context.Items["USER_IDENTITY"] = context.User?.Identity?.Name;
             context.Items["REQUEST_HEADERS"] = headers;
+            context.Items["REQUEST_BODY"] = context.Request?.Body.ToString();
             context.Items["SESSION_ID"] = context.Request?.Headers["MS-ASPNETCORE-TOKEN"].ToString();
 
             await next(context);

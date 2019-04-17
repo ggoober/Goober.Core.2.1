@@ -9,17 +9,17 @@ namespace Goober.Logging
 {
     public static class LoggingConfigurationExtensions
     {
-        public static void UseLoggingVariables(this IApplicationBuilder applicationBuilder)
+        public static void UseGooberLoggingVariables(this IApplicationBuilder applicationBuilder)
         {
             applicationBuilder.UseMiddleware(typeof(LoggingMiddleware));
         }
 
-        public static void UseExceptionsHandling(this IApplicationBuilder applicationBuilder)
+        public static void UseGooberExceptionsHandling(this IApplicationBuilder applicationBuilder)
         {
             applicationBuilder.UseMiddleware(typeof(ErrorHandlingMiddleware));
         }
 
-        public static IWebHostBuilder UseHermesLogging(this IWebHostBuilder webHostBuilder, string environmentVariable = "ASPNETCORE_ENVIRONMENT")
+        public static IWebHostBuilder UseGooberLogging(this IWebHostBuilder webHostBuilder, string environmentVariable = "ASPNETCORE_ENVIRONMENT")
         {
             var nLogConfiguration = NLog.LogManager.Configuration;
 

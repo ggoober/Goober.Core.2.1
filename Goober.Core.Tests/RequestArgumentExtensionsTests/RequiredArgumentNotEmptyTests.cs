@@ -20,7 +20,7 @@ namespace Goober.Core.Tests.RequestArgumentExtensionsTests
             var sut = new Fixture().Build<TestClass>().With(x => x.EnumerableProperty, new List<int>()).Create();
 
             //act+assert
-            var exc = Assert.Throws<ArgumentNullException>(() => sut.RequiredArgumentNotEmpty(() => sut.EnumerableProperty));
+            var exc = Assert.Throws<ArgumentNullException>(() => sut.RequiredArgumentListNotEmpty(() => sut.EnumerableProperty));
             Assert.Contains("sut.EnumerableProperty", exc.Message);
         }
     }
