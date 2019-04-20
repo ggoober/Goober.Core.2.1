@@ -8,19 +8,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Goober.WebApi
 {
     public abstract class GooberStartup
     {
-        #region props
-
         protected IConfiguration Configuration { get; private set; }
 
-        #endregion
-
-        #region ctor
+        protected List<string> SwaggerXmlCommentsFileNamesList { get; set; } = new List<string>();
 
         public GooberStartup(IHostingEnvironment env, IConfiguration config)
         {
@@ -29,14 +27,20 @@ namespace Goober.WebApi
                 .Build();
         }
 
-        #endregion
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.RegisterDateTimeService();
             services.AddCaching();
             services.AddSingleton(Configuration);
-            services.AddSwaggerGenWithDocs();
+
+            if (SwaggerXmlCommentsFileNamesList != null && SwaggerXmlCommentsFileNamesList.Any())
+            {
+                services.AddSwaggerGenWithXmlDocs(SwaggerXmlCommentsFileNamesList);
+            }
+            else
+            {
+                services.AddSwaggerGenWithDocs();
+            }
 
             services.AddMvc()
                     .AddJsonOptions(options =>

@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Denis Tskhay</Authors>
+    <Authors>ggoss</Authors>
+    <Company>ggoss</Company>
   </PropertyGroup>
 
   <ItemGroup>
