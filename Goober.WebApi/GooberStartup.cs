@@ -52,13 +52,13 @@ namespace Goober.WebApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerfactory, IApplicationLifetime appLifetime)
         {
-            app.UseGooberLoggingVariables();
+            app.UseExtenedLoggingVariables();
 
             UseRequestLocalizationByDefault(app);
 
             app.UseMiddleware(typeof(ErrorHandlingMiddleware));
 
-            app.UseGooberExceptionsHandling();
+            app.UseNlogExceptionsHandling();
 
             ConfigurePipelineAfterExceptionsHandling(app);
 
