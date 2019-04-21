@@ -50,68 +50,12 @@ namespace Goober.Core.Extensions
             }
         }
 
-        public static void RegisterCurrentAssemblyClasses(this IServiceCollection services, 
-            List<string> classesPostfix, 
-            ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, 
-            bool optional = false)
+        public static void RegisterAssemblyClasses<TAssemblyClassName>(this IServiceCollection services, List<string> classesPostfix = null, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, bool optional = false)
+            where TAssemblyClassName: class
         {
             RegisterClasses(services: services,
-                assembly: Assembly.GetExecutingAssembly(),
-                classesPostfix: classesPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
-        }
-
-        public static void RegisterCurrentAssemblyServiceAndRepository(this IServiceCollection services, 
-            ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, 
-            bool optional = false)
-        {
-            RegisterCurrentAssemblyClasses(services: services,
-                classesPostfix: ServiceAndRepositoryPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
-        }
-
-        public static void RegisterAssemblyClassesByMember<T>(this IServiceCollection services, 
-            List<string> classesPostfix, 
-            ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, 
-            bool optional = false)
-        {
-            RegisterClasses(services: services,
-                assembly: typeof(T).Assembly,
-                classesPostfix: classesPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
-        }
-
-        public static void RegisterAssemblyClasses(this IServiceCollection services, string assemblyName, List<string> classesPostfix, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, bool optional = false)
-        {
-            var assembly = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(x => x.GetName().Name == assemblyName);
-
-            if (assembly == null)
-                throw new InvalidOperationException($"Can't find assembly by Name = {assemblyName}");
-
-            RegisterClasses(services: services,
-                assembly: assembly,
-                classesPostfix: classesPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
-        }
-
-        public static void RegisterAssemblyServiceAndRepositoryByMember<T>(this IServiceCollection services, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, bool optional = false)
-        {
-            RegisterClasses(services: services,
-                assembly: typeof(T).Assembly,
-                classesPostfix: ServiceAndRepositoryPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
-        }
-
-        public static void RegisterAssemblyServiceAndRepository(this IServiceCollection services, string assemblyName, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, bool optional = false)
-        {
-            RegisterAssemblyClasses(services: services,
-                assemblyName: assemblyName,
-                classesPostfix: ServiceAndRepositoryPostfix,
+                assembly: typeof(TAssemblyClassName).Assembly,
+                classesPostfix: classesPostfix ?? ServiceAndRepositoryPostfix,
                 serviceLifetime: serviceLifetime,
                 optional: optional);
         }
