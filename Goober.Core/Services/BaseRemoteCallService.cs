@@ -56,6 +56,17 @@ namespace Goober.Core.Services
             return result;
         }
 
+        protected async Task<TResponse> ExecuteGetAsync<TResponse>(string pathAndQuery, int? timeoutMiliseconds = null)
+        {
+            var schemeAndHost = GetSchemeAndHostFromConfigs();
+
+            var url = ApiUtils.BuildUrl(schemeAndHost: schemeAndHost, urlPath: pathAndQuery);
+
+            var result = await ApiUtils.ExecuteGetAsync<TResponse>(url: url, timeout: timeoutMiliseconds);
+
+            return result;
+        }
+
         private string GetSchemeAndHostFromConfigs()
         {
             if (string.IsNullOrEmpty(_apiSchemeAndHostConfigKey) == true)

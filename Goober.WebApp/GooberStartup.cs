@@ -35,6 +35,7 @@ namespace Goober.WebApp
                         options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                         options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                         options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+                        options.SerializerSettings.Culture = new CultureInfo("ru-RU");
                     });
 
             ConfigureServiceCollections(services);
@@ -69,13 +70,13 @@ namespace Goober.WebApp
         private static void UseRequestLocalizationByDefault(IApplicationBuilder app)
         {
             var supportedCultures = new[] {
-                new CultureInfo("en"),
-                new CultureInfo("ru"),
+                new CultureInfo("en-US"),
+                new CultureInfo("ru-RU"),
             };
 
             app.UseRequestLocalization(new RequestLocalizationOptions
             {
-                DefaultRequestCulture = new RequestCulture("ru"),
+                DefaultRequestCulture = new RequestCulture("ru-RU"),
                 // Formatting numbers, dates, etc.
                 SupportedCultures = supportedCultures,
                 // UI strings that we have localized.

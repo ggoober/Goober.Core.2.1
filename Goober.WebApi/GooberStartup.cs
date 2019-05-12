@@ -86,13 +86,13 @@ namespace Goober.WebApi
         private static void UseRequestLocalizationByDefault(IApplicationBuilder app)
         {
             var supportedCultures = new[] {
-                new CultureInfo("en"),
-                new CultureInfo("ru"),
+                new CultureInfo("en-US"),
+                new CultureInfo("ru-RU"),
             };
 
             app.UseRequestLocalization(new RequestLocalizationOptions
             {
-                DefaultRequestCulture = new RequestCulture("ru"),
+                DefaultRequestCulture = new RequestCulture("ru-RU"),
                 // Formatting numbers, dates, etc.
                 SupportedCultures = supportedCultures,
                 // UI strings that we have localized.
