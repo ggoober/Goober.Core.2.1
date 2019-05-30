@@ -3,6 +3,7 @@ using Goober.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,7 +37,8 @@ namespace Goober.WebApp
                         options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                         options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                         options.SerializerSettings.Culture = new CultureInfo("ru-RU");
-                    });
+                    })
+                    .AddRazorPagesOptions(ConfigureRazorPagesOptions);
 
             ConfigureServiceCollections(services);
         }
@@ -64,6 +66,8 @@ namespace Goober.WebApp
         protected abstract void ConfigurePipelineAfterExceptionsHandling(IApplicationBuilder app);
 
         protected abstract void ConfigurePipelineAfterMvc(IApplicationBuilder app);
+
+        protected abstract void ConfigureRazorPagesOptions(RazorPagesOptions options);
 
         protected abstract void ConfigureRoutes(IRouteBuilder routes);
 
