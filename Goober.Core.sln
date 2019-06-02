@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.572
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28922.388
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Core", "Goober.Core\Goober.Core.csproj", "{CB855313-05BE-4097-875E-227C52D90C75}"
 EndProject
@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Logging", "Goober.Lo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.WebApi", "Goober.WebApi\Goober.WebApi.csproj", "{08774B10-6348-4EC9-A1A5-094AFBAF7218}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Goober.WebApp", "Goober.WebApp\Goober.WebApp.csproj", "{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.WebApp", "Goober.WebApp\Goober.WebApp.csproj", "{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.BackgroundWorker", "Goober.BackgroundWorker\Goober.BackgroundWorker.csproj", "{1286845C-B76F-4E53-99C3-0666D17E766C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1286845C-B76F-4E53-99C3-0666D17E766C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1286845C-B76F-4E53-99C3-0666D17E766C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1286845C-B76F-4E53-99C3-0666D17E766C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1286845C-B76F-4E53-99C3-0666D17E766C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
