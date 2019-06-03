@@ -56,7 +56,8 @@ namespace Goober.BackgroundWorker
                                 tasks.Add(
                                     ExecuteItemMethodSafetyAsync(semaphore: semaphore, 
                                         item: item, 
-                                        iterationId: iterationId));
+                                        iterationId: iterationId,
+                                        stoppingToken: stoppingToken));
                             }
                         }
 
@@ -78,7 +79,7 @@ namespace Goober.BackgroundWorker
             }
         }
 
-        private async Task ExecuteItemMethodSafetyAsync(SemaphoreSlim semaphore, TItem item, int iterationId)
+        private async Task ExecuteItemMethodSafetyAsync(SemaphoreSlim semaphore, TItem item, int iterationId, CancellationToken stoppingToken)
         {
             Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety ({_id}) iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
 
@@ -91,7 +92,7 @@ namespace Goober.BackgroundWorker
                         throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety ({_id}) iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
 
 
-                    await service.ProcessItemAsync(item);
+                    await service.ProcessItemAsync(item, stoppingToken);
                 }
 
                 Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety ({_id}) iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");

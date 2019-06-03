@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Goober.BackgroundWorker
@@ -7,6 +8,6 @@ namespace Goober.BackgroundWorker
     {
         Task<List<TItem>> GetItemsAsync();
 
-        Task ProcessItemAsync(TItem item);
+        Task ProcessItemAsync(TItem item, CancellationToken stoppinngToken);
     }
 }
