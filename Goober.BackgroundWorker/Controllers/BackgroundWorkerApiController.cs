@@ -1,4 +1,5 @@
-﻿using Goober.BackgroundWorker.Models;
+﻿using Goober.BackgroundWorker.BackgroundServices;
+using Goober.BackgroundWorker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +39,29 @@ namespace Goober.BackgroundWorker.Controllers
                     ServiceUpTime = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
                     TaskUpTime = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds)
                 };
+
+                var iterateBackgroundWorker = backgroundWorker as IIterateBackgroundMetrics;
+
+                if (iterateBackgroundWorker != null)
+                {
+                    newWorker.IteratedCount = iterateBackgroundWorker.IteratedCount;
+                    newWorker.SuccessIteratedCount = iterateBackgroundWorker.SuccessIteratedCount;
+                    newWorker.LastIterationDurationInMilliseconds = iterateBackgroundWorker.LastIterationDurationInMilliseconds;
+                    newWorker.LastIterationFinishDateTime = iterateBackgroundWorker.LastIterationFinishDateTime;
+                    newWorker.LastIterationStartDateTime = iterateBackgroundWorker.LastIterationStartDateTime;
+                }
+
+                var listBackgroundWorker = backgroundWorker as IListBackgroundMetrics;
+                if (listBackgroundWorker != null)
+                {
+                    newWorker.MaxParallelTasks = listBackgroundWorker.MaxParallelTasks;
+                    newWorker.LastIterationListItemsCount = listBackgroundWorker.LastIterationListItemsCount;
+                    newWorker.LastIterationListItemsProcessedCount = listBackgroundWorker.LastIterationListItemsProcessedCount;
+                    newWorker.LastIterationListItemsSuccessProcessedCount = listBackgroundWorker.LastIterationListItemsSuccessProcessedCount;
+                    newWorker.LastIterationListItemsLastDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsLastDurationInMilliseconds;
+                    newWorker.LastIterationListItemsAvgDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsAvgDurationInMilliseconds;
+                    newWorker.LastIterationListItemExecuteDateTime = listBackgroundWorker.LastIterationListItemExecuteDateTime;
+                }
 
                 ret.Services.Add(newWorker);
             }

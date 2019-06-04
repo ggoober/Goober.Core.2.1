@@ -12,7 +12,6 @@ namespace Goober.BackgroundWorker
     {
         #region fields
 
-        protected string _id = Guid.NewGuid().ToString();
         private Task _executingTask;
         private readonly CancellationTokenSource _stoppingCts = new CancellationTokenSource();
         private Stopwatch _serviceWatch = new Stopwatch();
@@ -33,6 +32,12 @@ namespace Goober.BackgroundWorker
 
 
         #region public properties
+
+        public string Id { get; protected set; } = Guid.NewGuid().ToString();
+
+        public DateTime? StartDateTime { get; protected set; }
+
+        public DateTime? StopDateTime { get; protected set; }
 
         public bool IsRunning { get; protected set; } = false;
 
@@ -56,8 +61,10 @@ namespace Goober.BackgroundWorker
 
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation($"BackgroundWorker ({_id}) starting...");
+            Logger.LogInformation($"BackgroundWorker ({Id}) starting...");
 
+            StartDateTime = DateTime.Now;
+            
             _serviceWatch.Start();
 
             try
@@ -68,11 +75,11 @@ namespace Goober.BackgroundWorker
 
                 IsRunning = true;
                 
-                Logger.LogInformation($"BackgroundWorker ({_id}) has started.");
+                Logger.LogInformation($"BackgroundWorker ({Id}) has started.");
             }
             catch (Exception exc)
             {
-                Logger.LogCritical(exc, $"BackgroundWorker ({_id}) start fail");
+                Logger.LogCritical(exc, $"BackgroundWorker ({Id}) start fail");
 
                 IsRunning = false;
                 _taskWatch.Stop();
@@ -83,21 +90,26 @@ namespace Goober.BackgroundWorker
 
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
+            Logger.LogInformation($"BackgroundWorker ({Id}) stoping...");
 
-            Logger.LogInformation($"BackgroundWorker ({_id}) stoping...");
+            StopDateTime = DateTime.Now;
+
+            _taskWatch.Reset();
 
             if (_executingTask == null)
             {
+                Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
+
                 return;
             }
 
             _stoppingCts.Cancel();
 
-            Logger.LogInformation($"BackgroundWorker ({_id}) stoping: waiting executed task");
+            Logger.LogInformation($"BackgroundWorker ({Id}) stoping: waiting executed task");
 
             await Task.WhenAny(_executingTask, Task.Delay(-1, cancellationToken));
 
-            Logger.LogInformation($"BackgroundWorker ({_id}) finalized");
+            Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
 
             cancellationToken.ThrowIfCancellationRequested();
         }
