@@ -4,7 +4,7 @@ namespace Goober.BackgroundWorker.BackgroundServices
 {
     public interface IListBackgroundMetrics
     {
-        int MaxParallelTasks { get; }
+        int MaxDegreeOfParallelism { get; }
 
         long? LastIterationListItemsCount { get; }
 

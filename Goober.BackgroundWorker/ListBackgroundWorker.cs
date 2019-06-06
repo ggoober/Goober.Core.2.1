@@ -13,9 +13,9 @@ namespace Goober.BackgroundWorker
     public class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IListBackgroundMetrics, IIterateBackgroundMetrics
         where TListBackgroundService : IListBackgroundService<TItem>
     {
-        protected virtual TimeSpan TaskDelay { get; } = TimeSpan.FromMinutes(5);
+        public virtual TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(5);
 
-        protected virtual int MaxDegreeOfParallelism { get; } = 1;
+        public int MaxDegreeOfParallelism { get; protected set; } = 1;
 
         public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider) 
             : base(logger, serviceProvider)
@@ -45,8 +45,6 @@ namespace Goober.BackgroundWorker
         public long? LastIterationDurationInMilliseconds { get; private set; }
 
         public long? AvgIterationDurationInMilliseconds { get; private set; }
-
-        public int MaxParallelTasks { get { return MaxParallelTasks; } }
 
         public long? LastIterationListItemsCount { get; private set; }
 
@@ -202,16 +200,16 @@ namespace Goober.BackgroundWorker
             LastIterationStartDateTime = null;
             LastIterationFinishDateTime = null;
 
-            LastIterationDurationInMilliseconds = null;
+            LastIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
 
-            LastIterationListItemsCount = null;
-            LastIterationListItemsProcessedCount = null;
-            LastIterationListItemsSuccessProcessedCount = null;
+            LastIterationListItemsCount = 0;
+            LastIterationListItemsProcessedCount = 0;
+            LastIterationListItemsSuccessProcessedCount = 0;
 
-            _lastIterationListItemsSumDurationInMilliseconds = null;
-            LastIterationListItemsLastDurationInMilliseconds = null;
-            LastIterationListItemsAvgDurationInMilliseconds = null;
+            _lastIterationListItemsSumDurationInMilliseconds = 0;
+            LastIterationListItemsLastDurationInMilliseconds = 0;
+            LastIterationListItemsAvgDurationInMilliseconds = 0;
             LastIterationListItemExecuteDateTime = null;
         }
     }

@@ -12,7 +12,7 @@ namespace Goober.BackgroundWorker
     public abstract class IterateBackgroundWorker<TIterateBackgroundService>: BaseBackgroundWorker, IIterateBackgroundMetrics
         where TIterateBackgroundService: IIterateBackgroundService
     {
-        protected virtual TimeSpan TaskDelay { get; } = TimeSpan.FromMinutes(5);
+        public virtual TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(5);
 
         public IterateBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
             : base(logger, serviceProvider)

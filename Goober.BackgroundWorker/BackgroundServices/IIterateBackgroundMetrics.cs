@@ -6,6 +6,8 @@ namespace Goober.BackgroundWorker.BackgroundServices
 {
     public interface IIterateBackgroundMetrics
     {
+        TimeSpan TaskDelay { get; }
+
         long IteratedCount { get; }
 
         long SuccessIteratedCount { get; }

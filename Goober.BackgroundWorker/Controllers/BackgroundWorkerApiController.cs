@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Goober.BackgroundWorker.Controllers
 {
-    public class BackgroundWorkerApiController: Controller
+    public class BackgroundWorkerApiController : Controller
     {
         private readonly IServiceProvider _serviceProvider;
 
@@ -36,31 +36,41 @@ namespace Goober.BackgroundWorker.Controllers
                 {
                     IsRunning = backgroundWorker.IsRunning,
                     Name = backgroundWorker.GetType().FullName,
-                    ServiceUpTime = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
-                    TaskUpTime = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds)
+                    ServiceUpTimeInSec = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
+                    TaskUpTimeInSec = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds)
                 };
 
                 var iterateBackgroundWorker = backgroundWorker as IIterateBackgroundMetrics;
 
                 if (iterateBackgroundWorker != null)
                 {
-                    newWorker.IteratedCount = iterateBackgroundWorker.IteratedCount;
-                    newWorker.SuccessIteratedCount = iterateBackgroundWorker.SuccessIteratedCount;
-                    newWorker.LastIterationDurationInMilliseconds = iterateBackgroundWorker.LastIterationDurationInMilliseconds;
-                    newWorker.LastIterationFinishDateTime = iterateBackgroundWorker.LastIterationFinishDateTime;
-                    newWorker.LastIterationStartDateTime = iterateBackgroundWorker.LastIterationStartDateTime;
+                    var iterateMetrics = new IterateBackgroundPingModel
+                    {
+                        TaskDelayInMilliseconds = Convert.ToInt64(iterateBackgroundWorker.TaskDelay.TotalMilliseconds),
+                        IteratedCount = iterateBackgroundWorker.IteratedCount,
+                        SuccessIteratedCount = iterateBackgroundWorker.SuccessIteratedCount,
+                        LastIterationStartDateTime = iterateBackgroundWorker.LastIterationStartDateTime,
+                        LastIterationFinishDateTime = iterateBackgroundWorker.LastIterationFinishDateTime,
+                        LastIterationDurationInMilliseconds = iterateBackgroundWorker.LastIterationDurationInMilliseconds,
+                        AvgIterationDurationInMilliseconds = iterateBackgroundWorker.AvgIterationDurationInMilliseconds
+                    };
+                    newWorker.Iterate = iterateMetrics;
                 }
 
                 var listBackgroundWorker = backgroundWorker as IListBackgroundMetrics;
                 if (listBackgroundWorker != null)
                 {
-                    newWorker.MaxParallelTasks = listBackgroundWorker.MaxParallelTasks;
-                    newWorker.LastIterationListItemsCount = listBackgroundWorker.LastIterationListItemsCount;
-                    newWorker.LastIterationListItemsProcessedCount = listBackgroundWorker.LastIterationListItemsProcessedCount;
-                    newWorker.LastIterationListItemsSuccessProcessedCount = listBackgroundWorker.LastIterationListItemsSuccessProcessedCount;
-                    newWorker.LastIterationListItemsLastDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsLastDurationInMilliseconds;
-                    newWorker.LastIterationListItemsAvgDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsAvgDurationInMilliseconds;
-                    newWorker.LastIterationListItemExecuteDateTime = listBackgroundWorker.LastIterationListItemExecuteDateTime;
+                    var listMetrics = new ListBackgroundPingModel
+                    {
+                        MaxParallelTasks = listBackgroundWorker.MaxDegreeOfParallelism,
+                        LastIterationListItemsCount = listBackgroundWorker.LastIterationListItemsCount,
+                        LastIterationListItemsProcessedCount = listBackgroundWorker.LastIterationListItemsProcessedCount,
+                        LastIterationListItemsSuccessProcessedCount = listBackgroundWorker.LastIterationListItemsSuccessProcessedCount,
+                        LastIterationListItemsLastDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsLastDurationInMilliseconds,
+                        LastIterationListItemsAvgDurationInMilliseconds = listBackgroundWorker.LastIterationListItemsAvgDurationInMilliseconds,
+                        LastIterationListItemExecuteDateTime = listBackgroundWorker.LastIterationListItemExecuteDateTime
+                    };
+                    newWorker.List = listMetrics;
                 }
 
                 ret.Services.Add(newWorker);
