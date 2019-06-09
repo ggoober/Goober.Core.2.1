@@ -49,9 +49,15 @@ namespace Goober.BackgroundWorker.Controllers
             if (secret != _configuration[SecretKey])
                 throw new System.Web.Http.HttpResponseException(HttpStatusCode.NotFound);
 
+            if (string.IsNullOrEmpty(fileNameWithExtension) == true)
+                throw new ArgumentNullException("fileNameWithExtension");
+
+            if (string.IsNullOrEmpty(fileNameWithExtension.Trim()) == true)
+                throw new ArgumentNullException("fileNameWithExtension");
+
             var files = GetFilesList();
 
-            var currentFile = files.FirstOrDefault(x => (x.Name + x.Extension).ToLower() == fileNameWithExtension.Trim().ToLower());
+            var currentFile = files.FirstOrDefault(x => x.Name.ToLower() == fileNameWithExtension.Trim().ToLower());
 
             if (currentFile == null)
                 throw new InvalidOperationException($"Can't find file {fileNameWithExtension}");
