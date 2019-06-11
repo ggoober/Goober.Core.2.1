@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Goober.BackgroundWorker.BackgroundServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Goober.BackgroundWorker
 {
-    public class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IListBackgroundMetrics, IIterateBackgroundMetrics
+    public abstract class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IListBackgroundMetrics, IIterateBackgroundMetrics
         where TListBackgroundService : IListBackgroundService<TItem>
     {
         public virtual TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(5);
@@ -62,6 +64,9 @@ namespace Goober.BackgroundWorker
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            SetTaskDelayFromConfiguration();
+            SetMaxDegreeOfParallelismFromConfiguration();
+
             while (stoppingToken.IsCancellationRequested == false)
             {
                 IteratedCount++;
@@ -217,6 +222,38 @@ namespace Goober.BackgroundWorker
             LastIterationListItemsLastDurationInMilliseconds = 0;
             LastIterationListItemsAvgDurationInMilliseconds = 0;
             LastIterationListItemExecuteDateTime = null;
+        }
+
+        private void SetTaskDelayFromConfiguration()
+        {
+            var configuration = ServiceProvider.GetService<IConfiguration>();
+            var taskDelayInMillisecondsConfigKey = this.GetType().Name + ".TaskDelayInMilliseconds";
+            var taskDelayInMilliseconds = ToInt(configuration[taskDelayInMillisecondsConfigKey]);
+            if (taskDelayInMilliseconds.HasValue)
+            {
+                TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
+            }
+        }
+
+        private void SetMaxDegreeOfParallelismFromConfiguration()
+        {
+            var configuration = ServiceProvider.GetService<IConfiguration>();
+            var maxDegreeOfParallelismConfigKey = this.GetType().Name + ".MaxDegreeOfParallelism";
+            var maxDegreeOfParallelism = ToInt(configuration[maxDegreeOfParallelismConfigKey]);
+            if (maxDegreeOfParallelism.HasValue)
+            {
+                MaxDegreeOfParallelism = maxDegreeOfParallelism.Value;
+            }
+        }
+
+
+        public static int? ToInt(string value)
+        {
+            float ret;
+            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
+                return Convert.ToInt32(ret);
+
+            return null;
         }
     }
 }

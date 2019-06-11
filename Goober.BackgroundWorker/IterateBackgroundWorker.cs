@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Goober.BackgroundWorker.BackgroundServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -43,6 +45,8 @@ namespace Goober.BackgroundWorker
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            SetTaskDelayFromConfiguration();
+
             while (stoppingToken.IsCancellationRequested == false)
             {
                 IteratedCount++;
@@ -60,7 +64,7 @@ namespace Goober.BackgroundWorker
                         var service = scope.ServiceProvider.GetRequiredService<TIterateBackgroundService>() as IIterateBackgroundService;
                         if (service == null)
                             throw new InvalidOperationException($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) service {typeof(TIterateBackgroundService).Name}");
-                        
+
                         await service.ExecuteIterationAsync(stoppingToken);
 
                     }
@@ -88,6 +92,17 @@ namespace Goober.BackgroundWorker
             }
         }
 
+        private void SetTaskDelayFromConfiguration()
+        {
+            var configuration = ServiceProvider.GetService<IConfiguration>();
+            var taskDelayInMillisecondsConfigKey = this.GetType().Name + ".TaskDelayInMilliseconds";
+            var taskDelayInMilliseconds = ToInt(configuration[taskDelayInMillisecondsConfigKey]);
+            if (taskDelayInMilliseconds.HasValue)
+            {
+                TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
+            }
+        }
+
         public override Task StartAsync(CancellationToken cancellationToken)
         {
             ResetMetrics();
@@ -112,6 +127,15 @@ namespace Goober.BackgroundWorker
 
             LastIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
+        }
+
+        public static int? ToInt(string value)
+        {
+            float ret;
+            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
+                return Convert.ToInt32(ret);
+
+            return null;
         }
     }
 }
