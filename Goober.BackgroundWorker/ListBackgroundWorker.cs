@@ -114,6 +114,8 @@ namespace Goober.BackgroundWorker
                     _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
                     AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
 
+                    ResetListItemMetrics();
+
                     Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) finished");
                 }
                 catch (Exception exc)
@@ -202,7 +204,11 @@ namespace Goober.BackgroundWorker
 
             LastIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
+            ResetListItemMetrics();
+        }
 
+        private void ResetListItemMetrics()
+        {
             LastIterationListItemsCount = 0;
             LastIterationListItemsProcessedCount = 0;
             LastIterationListItemsSuccessProcessedCount = 0;
