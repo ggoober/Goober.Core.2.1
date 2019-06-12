@@ -10,12 +10,12 @@ namespace Goober.BackgroundWorker.BackgroundServices
 
         DateTime? LastIterationListItemExecuteDateTime { get; }
 
-        long? LastIterationListItemsSuccessProcessedCount { get; }
+        long LastIterationListItemsSuccessProcessedCount { get; }
 
-        long? LastIterationListItemsProcessedCount { get; }
+        long LastIterationListItemsProcessedCount { get; }
 
-        long? LastIterationListItemsAvgDurationInMilliseconds { get; }
+        long LastIterationListItemsAvgDurationInMilliseconds { get; }
 
-        long? LastIterationListItemsLastDurationInMilliseconds { get; }
+        long LastIterationListItemsLastDurationInMilliseconds { get; }
     }
 }

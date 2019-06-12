@@ -19,7 +19,7 @@ namespace Goober.BackgroundWorker
 
         public int MaxDegreeOfParallelism { get; protected set; } = 1;
 
-        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider) 
+        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
             : base(logger, serviceProvider)
         {
         }
@@ -28,9 +28,7 @@ namespace Goober.BackgroundWorker
 
         private long _sumIterationsDurationInMilliseconds;
 
-        private  readonly object _iterationListItemUpdateMetricLocker  = new object();
-
-        public long? _lastIterationListItemsSumDurationInMilliseconds;
+        private long _lastIterationListItemsSumDurationInMilliseconds;
 
         #endregion
 
@@ -50,15 +48,42 @@ namespace Goober.BackgroundWorker
 
         public long? LastIterationListItemsCount { get; private set; }
 
-        public DateTime? LastIterationListItemExecuteDateTime { get; private set; }
 
-        public long? LastIterationListItemsSuccessProcessedCount { get; private set; }
+        private long _lastIterationListItemExecuteDateTimeInBinnary;
+        public DateTime? LastIterationListItemExecuteDateTime
+        {
+            get
+            {
+                if (_lastIterationListItemExecuteDateTimeInBinnary == 0)
+                    return null;
 
-        public long? LastIterationListItemsProcessedCount { get; private set; }
+                return DateTime.FromBinary(_lastIterationListItemExecuteDateTimeInBinnary);
+            }
+        }
 
-        public long? LastIterationListItemsAvgDurationInMilliseconds { get; private set; }
 
-        public long? LastIterationListItemsLastDurationInMilliseconds { get; private set; }
+        private long _lastIterationListItemsSuccessProcessedCount;
+        public long LastIterationListItemsSuccessProcessedCount => _lastIterationListItemsSuccessProcessedCount;
+
+
+        private long _lastIterationListItemsProcessedCount;
+        public long LastIterationListItemsProcessedCount => _lastIterationListItemsProcessedCount;
+
+
+        public long LastIterationListItemsAvgDurationInMilliseconds
+        {
+            get
+            {
+                if (_lastIterationListItemsSuccessProcessedCount == 0)
+                    return 0;
+
+                return _lastIterationListItemsSumDurationInMilliseconds / _lastIterationListItemsSuccessProcessedCount;
+            }
+        }
+
+
+        private long _lastIterationListItemsLastDurationInMilliseconds;
+        public long LastIterationListItemsLastDurationInMilliseconds => _lastIterationListItemsLastDurationInMilliseconds;
 
         #endregion
 
@@ -102,8 +127,8 @@ namespace Goober.BackgroundWorker
                             if (stoppingToken.IsCancellationRequested == false)
                             {
                                 tasks.Add(
-                                    ExecuteItemMethodSafetyAsync(semaphore: semaphore, 
-                                        item: item, 
+                                    ExecuteItemMethodSafetyAsync(semaphore: semaphore,
+                                        item: item,
                                         iterationId: IteratedCount,
                                         stoppingToken: stoppingToken));
                             }
@@ -142,11 +167,8 @@ namespace Goober.BackgroundWorker
         {
             Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
 
-            lock (_iterationListItemUpdateMetricLocker)
-            {
-                LastIterationListItemsProcessedCount++;
-                LastIterationListItemExecuteDateTime = DateTime.Now;
-            }
+            Interlocked.Increment(ref _lastIterationListItemsProcessedCount);
+            Interlocked.Exchange(ref _lastIterationListItemExecuteDateTimeInBinnary, DateTime.Now.ToBinary());
 
             try
             {
@@ -165,13 +187,9 @@ namespace Goober.BackgroundWorker
 
                 itemWatcher.Stop();
 
-                lock (_iterationListItemUpdateMetricLocker)
-                {
-                    LastIterationListItemsSuccessProcessedCount++;
-                    LastIterationListItemsLastDurationInMilliseconds = itemWatcher.ElapsedMilliseconds;
-                    _lastIterationListItemsSumDurationInMilliseconds += LastIterationListItemsLastDurationInMilliseconds;
-                    LastIterationListItemsAvgDurationInMilliseconds = _lastIterationListItemsSumDurationInMilliseconds / LastIterationListItemsSuccessProcessedCount;
-                }
+                Interlocked.Increment(ref _lastIterationListItemsSuccessProcessedCount);
+                Interlocked.Exchange(ref _lastIterationListItemsLastDurationInMilliseconds, itemWatcher.ElapsedMilliseconds);
+                Interlocked.Add(ref _lastIterationListItemsSumDurationInMilliseconds, _lastIterationListItemsLastDurationInMilliseconds);
 
                 Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");
             }
@@ -217,13 +235,12 @@ namespace Goober.BackgroundWorker
         private void ResetListItemMetrics()
         {
             LastIterationListItemsCount = 0;
-            LastIterationListItemsProcessedCount = 0;
-            LastIterationListItemsSuccessProcessedCount = 0;
+            _lastIterationListItemsProcessedCount = 0;
+            _lastIterationListItemsSuccessProcessedCount = 0;
 
             _lastIterationListItemsSumDurationInMilliseconds = 0;
-            LastIterationListItemsLastDurationInMilliseconds = 0;
-            LastIterationListItemsAvgDurationInMilliseconds = 0;
-            LastIterationListItemExecuteDateTime = null;
+            _lastIterationListItemsLastDurationInMilliseconds = 0;
+            _lastIterationListItemExecuteDateTimeInBinnary = 0;
         }
 
         private void SetTaskDelayFromConfiguration()
