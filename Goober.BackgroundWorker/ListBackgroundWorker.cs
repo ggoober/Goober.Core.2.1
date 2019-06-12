@@ -79,13 +79,13 @@ namespace Goober.BackgroundWorker
 
                     List<TItem> items;
 
-                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) executing");
+                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) executing");
 
                     using (var scope = ServiceScopeFactory.CreateScope())
                     {
                         var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
                         if (service == null)
-                            throw new InvalidOperationException($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) service {typeof(TListBackgroundService).Name}");
+                            throw new InvalidOperationException($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) service {typeof(TListBackgroundService).Name}");
 
                         items = await service.GetItemsAsync();
                     }
@@ -121,26 +121,26 @@ namespace Goober.BackgroundWorker
 
                     ResetListItemMetrics();
 
-                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) finished");
+                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) finished");
                 }
                 catch (Exception exc)
                 {
-                    this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) fail");
+                    this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) fail");
                 }
 
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
+                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
 
                 LastIterationFinishDateTime = DateTime.Now;
 
                 await Task.Delay(TaskDelay, stoppingToken);
 
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
+                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
             }
         }
 
         private async Task ExecuteItemMethodSafetyAsync(SemaphoreSlim semaphore, TItem item, long iterationId, CancellationToken stoppingToken)
         {
-            Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety ({Id}) iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
+            Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
 
             lock (_iterationListItemUpdateMetricLocker)
             {
@@ -157,7 +157,7 @@ namespace Goober.BackgroundWorker
                 {
                     var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
                     if (service == null)
-                        throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety ({Id}) iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
+                        throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
 
 
                     await service.ProcessItemAsync(item, stoppingToken);
@@ -173,11 +173,11 @@ namespace Goober.BackgroundWorker
                     LastIterationListItemsAvgDurationInMilliseconds = _lastIterationListItemsSumDurationInMilliseconds / LastIterationListItemsSuccessProcessedCount;
                 }
 
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety ({Id}) iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");
+                Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");
             }
             catch (Exception exc)
             {
-                this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteItemMethodSafety ({Id}) iteration ({iterationId}) fail, item: {JsonConvert.SerializeObject(item)}");
+                this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) fail, item: {JsonConvert.SerializeObject(item)}");
             }
             finally
             {
@@ -209,6 +209,8 @@ namespace Goober.BackgroundWorker
 
             LastIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
+            AvgIterationDurationInMilliseconds = 0;
+
             ResetListItemMetrics();
         }
 
@@ -244,16 +246,6 @@ namespace Goober.BackgroundWorker
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism.Value;
             }
-        }
-
-
-        public static int? ToInt(string value)
-        {
-            float ret;
-            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
-                return Convert.ToInt32(ret);
-
-            return null;
         }
     }
 }

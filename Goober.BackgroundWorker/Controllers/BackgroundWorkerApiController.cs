@@ -34,10 +34,12 @@ namespace Goober.BackgroundWorker.Controllers
 
                 var newWorker = new BackgroundWorkerPingModel
                 {
+                    Id = backgroundWorker.Id,
                     IsRunning = backgroundWorker.IsRunning,
                     Name = backgroundWorker.GetType().FullName,
                     ServiceUpTimeInSec = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
-                    TaskUpTimeInSec = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds)
+                    TaskUpTimeInSec = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds),
+                    IsCancellationRequested  = backgroundWorker.IsCancellationRequested
                 };
 
                 var iterateBackgroundWorker = backgroundWorker as IIterateBackgroundMetrics;

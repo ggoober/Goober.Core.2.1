@@ -57,13 +57,13 @@ namespace Goober.BackgroundWorker
                     var iterationWatch = new Stopwatch();
                     iterationWatch.Start();
 
-                    Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) executing");
+                    Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iterate ({IteratedCount}) executing");
 
                     using (var scope = ServiceScopeFactory.CreateScope())
                     {
                         var service = scope.ServiceProvider.GetRequiredService<TIterateBackgroundService>() as IIterateBackgroundService;
                         if (service == null)
-                            throw new InvalidOperationException($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) service {typeof(TIterateBackgroundService).Name}");
+                            throw new InvalidOperationException($"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iterate ({IteratedCount}) service {typeof(TIterateBackgroundService).Name}");
 
                         await service.ExecuteIterationAsync(stoppingToken);
 
@@ -75,20 +75,20 @@ namespace Goober.BackgroundWorker
                     _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
                     AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
 
-                    Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) finished");
+                    Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iterate ({IteratedCount}) finished");
                 }
                 catch (Exception exc)
                 {
-                    this.Logger.LogError(exception: exc, message: $"IterateBackgroundWorker.ExecuteAsync ({Id}) fail iterate ({IteratedCount})");
+                    this.Logger.LogError(exception: exc, message: $"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) fail iterate ({IteratedCount})");
                 }
 
                 LastIterationFinishDateTime = DateTime.Now;
 
-                Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
+                Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iterate ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
 
                 await Task.Delay(TaskDelay, stoppingToken);
 
-                Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync ({Id}) iterate ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
+                Logger.LogInformation($"IterateBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iterate ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
             }
         }
 
@@ -127,15 +127,9 @@ namespace Goober.BackgroundWorker
 
             LastIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
-        }
 
-        public static int? ToInt(string value)
-        {
-            float ret;
-            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
-                return Convert.ToInt32(ret);
-
-            return null;
+            AvgIterationDurationInMilliseconds = 0;
+            _sumIterationsDurationInMilliseconds = 0;
         }
     }
 }

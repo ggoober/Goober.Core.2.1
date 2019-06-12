@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,12 +15,14 @@ namespace Goober.BackgroundWorker
         #region fields
 
         private Task _executingTask;
-        private readonly CancellationTokenSource _stoppingCts = new CancellationTokenSource();
+
+        private Task _stoppingTask;
+
+        private CancellationTokenSource _stoppingCts = new CancellationTokenSource();
         private Stopwatch _serviceWatch = new Stopwatch();
         private Stopwatch _taskWatch = new Stopwatch();
 
         #endregion
-
 
         #region protected properties
 
@@ -30,10 +34,9 @@ namespace Goober.BackgroundWorker
 
         #endregion
 
-
         #region public properties
 
-        public string Id { get; protected set; } = Guid.NewGuid().ToString();
+        public string Id { get; protected set; } = "none";
 
         public DateTime? StartDateTime { get; protected set; }
 
@@ -45,8 +48,9 @@ namespace Goober.BackgroundWorker
 
         public TimeSpan TaskUpTime => _taskWatch.Elapsed;
 
-        #endregion
+        public bool IsCancellationRequested => _stoppingCts?.IsCancellationRequested ?? false;
 
+        #endregion
 
         #region ctor
 
@@ -61,59 +65,92 @@ namespace Goober.BackgroundWorker
 
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation($"BackgroundWorker ({Id}) starting...");
+            if (IsRunning == true)
+            {
+                throw new InvalidOperationException($"BackgroundWorker ({Id}) start failed, task already executing...");
+            }
+
+            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} is starting...");
 
             StartDateTime = DateTime.Now;
-            
             _serviceWatch.Start();
+            _taskWatch.Start();
 
             try
             {
-                _taskWatch.Start();
 
                 _executingTask = ExecuteAsync(_stoppingCts.Token);
+                _stoppingTask = _executingTask.ContinueWith(FinalizeMetrics);
 
+                Id = _executingTask.Id.ToString();
                 IsRunning = true;
-                
-                Logger.LogInformation($"BackgroundWorker ({Id}) has started.");
+
+                Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) has started.");
             }
             catch (Exception exc)
             {
-                Logger.LogCritical(exc, $"BackgroundWorker ({Id}) start fail");
+                Logger.LogCritical(exc, $"BackgroundWorker {this.GetType().Name} ({Id}) start fail");
 
-                IsRunning = false;
-                _taskWatch.Stop();
+                SetMetricsOnStop();
             }
 
             return _executingTask.IsCompleted ? _executingTask : Task.CompletedTask;
         }
 
-        public virtual async Task StopAsync(CancellationToken cancellationToken)
+        public virtual Task StopAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation($"BackgroundWorker ({Id}) stoping...");
-
+            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) stoping...");
+            StartDateTime = null;
             StopDateTime = DateTime.Now;
 
-            _taskWatch.Reset();
-
-            if (_executingTask == null)
+            try
             {
-                Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
+                _stoppingCts.Cancel();
 
-                return;
+
+                if (IsRunning == true)
+                {
+                    var configuration = ServiceProvider.GetService<IConfiguration>();
+                    var stoppingTimeoutMillisecondsKey = this.GetType().Name + ".StoppingTimeoutMilliseconds";
+
+                    var stoppingTimeoutMilliseconds = ToInt(configuration[stoppingTimeoutMillisecondsKey]) ?? 5000;
+
+                    _stoppingTask.Wait(stoppingTimeoutMilliseconds);
+                }
+            }
+            finally
+            {
+                SetMetricsOnStop();
+                Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) stopped");
             }
 
-            _stoppingCts.Cancel();
+            return _stoppingTask.IsCompleted ? _stoppingTask : Task.CompletedTask;
+        }
 
-            Logger.LogInformation($"BackgroundWorker ({Id}) stoping: waiting executed task");
-
-            await Task.WhenAny(_executingTask, Task.Delay(-1, cancellationToken));
+        private void FinalizeMetrics(Task t)
+        {
+            SetMetricsOnStop();
 
             Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
+        }
 
-            cancellationToken.ThrowIfCancellationRequested();
+        private void SetMetricsOnStop()
+        {
+            IsRunning = false;
+            _taskWatch.Reset();
+            Id = "none";
+            _stoppingCts = new CancellationTokenSource();
         }
 
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
+
+        protected static int? ToInt(string value)
+        {
+            float ret;
+            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
+                return Convert.ToInt32(ret);
+
+            return null;
+        }
     }
 }

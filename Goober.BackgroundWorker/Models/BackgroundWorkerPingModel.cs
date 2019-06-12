@@ -10,6 +10,8 @@ namespace Goober.BackgroundWorker.Models
 
         public bool IsRunning { get; set; }
 
+        public bool IsCancellationRequested { get; set; }
+
         public long ServiceUpTimeInSec { get; set; }
 
         public long TaskUpTimeInSec { get; set; }
