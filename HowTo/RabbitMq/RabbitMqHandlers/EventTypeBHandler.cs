@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RabbitMq
+namespace RabbitMq.RabbitMqHandlers
 {
-    public class EventTypeBHandler : IEventTypeBHandler
+    public class EventTypeBHandler : IMessageHandler<EventTypeB>
     {
         public async Task ProcessAsync(EventTypeB @event)
         {

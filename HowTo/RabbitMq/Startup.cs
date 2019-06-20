@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RabbitMq.RabbitMqHandlers;
 
 namespace RabbitMq
 {
@@ -23,9 +24,8 @@ namespace RabbitMq
 
         protected override void ConfigureServiceCollections(IServiceCollection services)
         {
-            //services.AddScoped<IEventTypeAHandler, EventTypeAHandler>();
-            //services.AddScoped<IEventTypeBHandler, EventTypeBHandler>();
             services.AddScoped<EventTypeAHandler>();
+            services.AddScoped<EventTypeBHandler>();
             services.AddRabbitMq(Configuration);
         }
     }

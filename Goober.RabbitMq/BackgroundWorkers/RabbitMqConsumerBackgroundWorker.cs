@@ -28,15 +28,11 @@ namespace Goober.RabbitMq.BackgroundWorkers
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private ILogger _logger;
 
-        private CancellationTokenSource _stoppingCts = new CancellationTokenSource();
         private Stopwatch _serviceWatch = new Stopwatch();
-        private Stopwatch _taskWatch = new Stopwatch();
 
         #endregion
 
         #region public properties
-
-        public string Id { get; protected set; } = "none";
 
         public DateTime? StartDateTime { get; protected set; }
 
@@ -45,8 +41,6 @@ namespace Goober.RabbitMq.BackgroundWorkers
         public bool IsRunning { get; protected set; } = false;
 
         public TimeSpan ServiceUpTime => _serviceWatch.Elapsed;
-
-        public bool IsCancellationRequested => _stoppingCts?.IsCancellationRequested ?? false;
 
         #endregion
 
@@ -57,8 +51,6 @@ namespace Goober.RabbitMq.BackgroundWorkers
             IServiceScopeFactory serviceScopeFactory,
             IOptions<RabbitMqClientOptions> rabbitMqClientOptionsAccessor)
         {
-            //_subscriptions = rabbitMqSubscriptionOptions.Subscriptions;
-
             _logger = logger;
             _serviceProvider = serviceProvider;
             _serviceScopeFactory = serviceScopeFactory;
@@ -67,34 +59,34 @@ namespace Goober.RabbitMq.BackgroundWorkers
 
         #endregion
 
+        public List<KeyValuePair<Type, ConsumerConnectionModel>> GetConsumers()
+        {
+            return _busDict.ToList();
+        }
+
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
             if (IsRunning == true)
             {
-                throw new InvalidOperationException($"RabbitMqConsumerBackgroundWorker ({Id}) start failed, task already executing...");
+                throw new InvalidOperationException($"RabbitMqConsumerBackgroundWorker start failed, task already executing...");
             }
 
             _logger.LogInformation($"RabbitMqConsumerBackgroundWorker is starting...");
 
             StartDateTime = DateTime.Now;
             _serviceWatch.Start();
-            _taskWatch.Start();
+            IsRunning = true;
 
             try
             {
-                Id = "RabbitMqConsummer";
-                IsRunning = true;
-
                 StartListening();
 
-
-                _logger.LogInformation($"RabbitMqConsumerBackgroundWorker ({Id}) has started.");
+                _logger.LogInformation($"RabbitMqConsumerBackgroundWorker has started.");
             }
             catch (Exception exc)
             {
-                _logger.LogCritical(exc, $"RabbitMqConsumerBackgroundWorker ({Id}) start fail");
-
-                SetMetricsOnStop();
+                _logger.LogCritical(exc, $"RabbitMqConsumerBackgroundWorker start fail");
+                IsRunning = false;
             }
 
             return Task.CompletedTask;
@@ -102,30 +94,21 @@ namespace Goober.RabbitMq.BackgroundWorkers
 
         public virtual Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"RabbitMqConsumerBackgroundWorker ({Id}) stoping...");
+            foreach (var iConnection in _busDict)
+            {
+                iConnection.Value.Bus.Dispose();
+                iConnection.Value.SubscriptionResult.Dispose();
+            }
+
+            _busDict.Clear();
+
+            _logger.LogInformation($"RabbitMqConsumerBackgroundWorker stoping...");
             StopDateTime = DateTime.Now;
 
-            try
-            {
-                _stoppingCts.Cancel();
-            }
-            finally
-            {
-                SetMetricsOnStop();
-                _logger.LogInformation($"RabbitMqConsumerBackgroundWorker ({Id}) stopped");
-            }
+            IsRunning = false;
+            _logger.LogInformation($"RabbitMqConsumerBackgroundWorker stopped");
 
             return Task.CompletedTask;
-        }
-
-        private void SetMetricsOnStop()
-        {
-            IsRunning = false;
-            _taskWatch.Reset();
-            Id = "none";
-            _stoppingCts = new CancellationTokenSource();
-
-            _logger.LogInformation($"RabbitMqConsumerBackgroundWorker ({Id}) finalized");
         }
 
         public void StartListening()
@@ -157,12 +140,6 @@ namespace Goober.RabbitMq.BackgroundWorkers
 
         private ConsumerConnectionModel Subscribe(RabbitMqConsumerOptions consumerOptions)
         {
-            // библиотека, которая используется здесь для работы с RabbitMQ, имеет 2 варианта программного интерфейса. 
-            // Первый вариант очень простой. Второй вариант Advanced - немного сложнее, но требует много ручной работы.
-            // Здесь по сути необходимо нечто среднее между ними, Advanced оверхед, но и простой неудовлетворяет нуждам. 
-            // Принимая во внимание, что данный код - код подписки - будет исполнен единожды при старте, было принято решение использовать 
-            // простой интерфейс + рефлексию. На произоводительности это не скажется по выше упомянутой причине.
-
             var messageType = Type.GetType(consumerOptions.MessageTypeFullName);
             if (messageType == null)
                 throw new InvalidOperationException($"Failed get message type for {consumerOptions.MessageTypeFullName}");
@@ -170,6 +147,8 @@ namespace Goober.RabbitMq.BackgroundWorkers
             var handlerType = Type.GetType(consumerOptions.HandlerTypeFullName);
             if (handlerType == null)
                 throw new InvalidOperationException($"Failed get handler type for {consumerOptions.HandlerTypeFullName}");
+
+            CheckHandlerIsResolvable(handlerType);
 
             var cc = new ConsumerConnectionModel
             {
@@ -180,7 +159,12 @@ namespace Goober.RabbitMq.BackgroundWorkers
             };
 
             var handlerInvokerType = typeof(MessageHandlerInvoker<,>).MakeGenericType(messageType, handlerType);
-            var handlerInvoker = (IMessageHandlerInvoker)Activator.CreateInstance(handlerInvokerType, new object[] { _serviceProvider });
+            cc.MessageHandlerInvoker = (IMessageHandlerInvoker)Activator.CreateInstance(handlerInvokerType,
+                                    new object[] {
+                                        _serviceProvider,
+                                        cc.MessageProcessRetryCount,
+                                        TimeSpan.FromMilliseconds(cc.MessageProccessRetryDelayInMilliseconds)
+                                    });
 
             var subscribeAsync = typeof(IBus)
                 .GetMethods()
@@ -194,7 +178,7 @@ namespace Goober.RabbitMq.BackgroundWorkers
 
             var bus = CreateBus(messageType);
 
-            var onMessage = handlerInvoker.CreateHandlerDelegate();
+            var onMessage = cc.MessageHandlerInvoker.CreateHandlerDelegate();
             cc.SubscriptionResult = (ISubscriptionResult)subscribeAsync.Invoke(bus, new object[] { _options.AppName, onMessage });
 
             return cc;

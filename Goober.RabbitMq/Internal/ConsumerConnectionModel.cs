@@ -3,11 +3,13 @@ using System;
 
 namespace Goober.RabbitMq.Internal
 {
-    class ConsumerConnectionModel
+    public class ConsumerConnectionModel
     {
         public IBus Bus { get; set; }
 
         public ISubscriptionResult SubscriptionResult { get; set; }
+
+        public IMessageHandlerInvoker MessageHandlerInvoker { get; set; }
 
         public Type HandlerType { get; set; }
 

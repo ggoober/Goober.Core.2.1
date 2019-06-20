@@ -1,11 +1,25 @@
-﻿using Goober.RabbitMq.Abstractions;
-using System;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Goober.RabbitMq.Internal
 {
-    internal interface IMessageHandlerInvoker
+    public interface IMessageHandlerInvoker
     {
         Delegate CreateHandlerDelegate();
+
+        Type GetHandlerType();
+
+        long MessagesProcessingAttemptsCount { get; }
+
+        long MessagesSuccessProcessedCount { get; }
+
+        long MessagesErrorProcessedCount { get; }
+
+        DateTime? LastMessageProcessingAttemptDate { get; }
+
+        DateTime? LastMessageSuccessProcessedDate { get; }
+
+        long? AvgMessagesProcessingDurationInMilliseconds { get; }
+
+        DateTime? LastMessageSuccessProcessedDurationInMilliseconds { get; }
     }
 }

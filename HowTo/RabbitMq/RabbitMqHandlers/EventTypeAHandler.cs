@@ -1,16 +1,16 @@
 ﻿using Goober.RabbitMq.Abstractions;
 using RabbitMq.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace RabbitMq
+namespace RabbitMq.RabbitMqHandlers
 {
-    public class EventTypeAHandler : IEventTypeAHandler
+    public class EventTypeAHandler : IMessageHandler<EventTypeA>
     {
         public async Task ProcessAsync(EventTypeA @event)
         {
+            Thread.Sleep(1000);
         }
     }
 }
