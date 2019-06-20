@@ -80,7 +80,7 @@ namespace Goober.BackgroundWorker
             {
 
                 _executingTask = ExecuteAsync(_stoppingCts.Token);
-                _stoppingTask = _executingTask.ContinueWith(FinalizeMetrics);
+                _stoppingTask = _executingTask.ContinueWith(FinalizeMetrics, TaskContinuationOptions.ExecuteSynchronously);
 
                 Id = _executingTask.Id.ToString();
                 IsRunning = true;
@@ -127,8 +127,20 @@ namespace Goober.BackgroundWorker
             return _stoppingTask.IsCompleted ? _stoppingTask : Task.CompletedTask;
         }
 
-        private void FinalizeMetrics(Task t)
+        private void FinalizeMetrics(Task task)
         {
+            if (task.Status == TaskStatus.Faulted)
+            {
+                if (task.Exception != null)
+                {
+                    Logger.LogError(exception: task.Exception, message: $"BackgroundWorker ({Id}) fault");
+                }
+                else
+                {
+                    Logger.LogError(message: $"BackgroundWorker ({Id}) fault without exception");
+                }
+            }
+
             SetMetricsOnStop();
 
             Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
