@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.0.0-beta01</Version>
+    <Authors>ggooss</Authors>
   </PropertyGroup>
 
   <ItemGroup>
