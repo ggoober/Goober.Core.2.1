@@ -1,8 +1,6 @@
 ﻿using Goober.RabbitMq.Abstractions;
-using Goober.RabbitMq.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Polly;
 using System;
 using System.Diagnostics;
@@ -15,6 +13,9 @@ namespace Goober.RabbitMq.Internal.Implementation
         where TMessage : class
         where TMessageHandler : class, IMessageHandler<TMessage>
     {
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
+        private SemaphoreSlim _semaphoreSlim;
 
         #region metrics
 
@@ -64,14 +65,14 @@ namespace Goober.RabbitMq.Internal.Implementation
         }
 
         private long _lastMessageSuccessProcessedDurationInMilliseconds;
-        public DateTime? LastMessageSuccessProcessedDurationInMilliseconds
+        public long? LastMessageSuccessProcessedDurationInMilliseconds
         {
             get
             {
                 if (_lastMessageSuccessProcessedDurationInMilliseconds == 0)
                     return null;
 
-                return DateTime.FromBinary(_lastMessageSuccessProcessedDurationInMilliseconds);
+                return _lastMessageSuccessProcessedDurationInMilliseconds;
             }
         }
 
@@ -81,9 +82,10 @@ namespace Goober.RabbitMq.Internal.Implementation
         private readonly ILogger<MessageHandlerInvoker<TMessage, TMessageHandler>> _logger;
         private readonly AsyncPolicy _retryPolicy;
 
-        public MessageHandlerInvoker(IServiceProvider serviceProvider, 
-            int retryCount, 
-            TimeSpan retryInterval)
+        public MessageHandlerInvoker(IServiceProvider serviceProvider,
+            int retryCount,
+            TimeSpan retryInterval,
+            int maxParallelHandlers)
         {
             _serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
             _logger = serviceProvider.GetRequiredService<ILogger<MessageHandlerInvoker<TMessage, TMessageHandler>>>();
@@ -94,6 +96,8 @@ namespace Goober.RabbitMq.Internal.Implementation
                     retryCount: retryCount,
                     sleepDurationProvider: retryAttempt => retryInterval
                     );
+
+            _semaphoreSlim = new SemaphoreSlim(maxParallelHandlers);
         }
 
         public Delegate CreateHandlerDelegate()
@@ -108,7 +112,16 @@ namespace Goober.RabbitMq.Internal.Implementation
 
         public async Task ProcessWithRetryAsync(TMessage message)
         {
-            await _retryPolicy.ExecuteAsync(() => ProcessAsync(message));
+            try
+            {
+                await _semaphoreSlim.WaitAsync(_cancellationTokenSource.Token);
+
+                await _retryPolicy.ExecuteAsync(() => ProcessAsync(message));
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
         private async Task ProcessAsync(TMessage message)

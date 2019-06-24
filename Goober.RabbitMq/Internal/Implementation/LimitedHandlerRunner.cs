@@ -12,14 +12,14 @@ namespace Goober.RabbitMq.Internal.Implementation
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
-        private readonly int _maxParallelHandlers;
+        private readonly RabbitMqClientOptions _rabbitMqClientOptions;
 
         public LimitedHandlerRunner(
             IConsumerErrorStrategy consumerErrorStrategy,
             RabbitMqClientOptions rabbitMqClientOptions)
             : base(consumerErrorStrategy)
         {
-            _maxParallelHandlers = 10;// rabbitMqClientOptions.MaxParallelHandlers;
+            _rabbitMqClientOptions = rabbitMqClientOptions;
         }
 
         public override async Task<AckStrategy> InvokeUserMessageHandlerAsync(ConsumerExecutionContext context)
@@ -29,7 +29,7 @@ namespace Goober.RabbitMq.Internal.Implementation
 
             var cancellationToken = _cancellationTokenSource.Token;
 
-            var queueSemaphore = _semaphores.GetOrAdd(context.Info.Queue, new SemaphoreSlim(_maxParallelHandlers));
+            var queueSemaphore = _semaphores.GetOrAdd(context.Info.Queue, new SemaphoreSlim(10));
 
             try
             {

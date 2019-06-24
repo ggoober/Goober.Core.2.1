@@ -163,7 +163,8 @@ namespace Goober.RabbitMq.BackgroundWorkers
                                     new object[] {
                                         _serviceProvider,
                                         cc.MessageProcessRetryCount,
-                                        TimeSpan.FromMilliseconds(cc.MessageProccessRetryDelayInMilliseconds)
+                                        TimeSpan.FromMilliseconds(cc.MessageProccessRetryDelayInMilliseconds),
+                                        cc.MaxParallelHandlers
                                     });
 
             var subscribeAsync = typeof(IBus)
@@ -176,7 +177,7 @@ namespace Goober.RabbitMq.BackgroundWorkers
                 throw new InvalidOperationException("Unable to subscribe due to: IBus.SubscribeAsync not found");
             }
 
-            var bus = CreateBus(messageType);
+            var bus = CreateBus(messageType, cc.PrefetchCount);
 
             var onMessage = cc.MessageHandlerInvoker.CreateHandlerDelegate();
             cc.SubscriptionResult = (ISubscriptionResult)subscribeAsync.Invoke(bus, new object[] { _options.AppName, onMessage });
@@ -184,7 +185,7 @@ namespace Goober.RabbitMq.BackgroundWorkers
             return cc;
         }
 
-        private IBus CreateBus(Type type)
+        private IBus CreateBus(Type type, int prefetchCount)
         {
             var connectionConfiguration = new ConnectionConfiguration()
             {
@@ -197,7 +198,7 @@ namespace Goober.RabbitMq.BackgroundWorkers
 
                 Name = $"[C]{_options.AppName}:{type.Name}",
 
-                PrefetchCount = 10, // _options.PrefetchCount,
+                PrefetchCount = (ushort) prefetchCount,
 
                 Hosts = new List<HostConfiguration>
                 {
@@ -213,7 +214,7 @@ namespace Goober.RabbitMq.BackgroundWorkers
             {
                 serviceRegister.Register(_ => _options);
                 serviceRegister.Register<IConsumerErrorStrategy, ConsumerErrorStrategy>();
-                serviceRegister.Register<IHandlerRunner, LimitedHandlerRunner>();
+                //serviceRegister.Register<IHandlerRunner, LimitedHandlerRunner>();
                 serviceRegister.Register<ILoggerFactory>(_ => _serviceProvider.GetRequiredService<ILoggerFactory>());
             });
         }

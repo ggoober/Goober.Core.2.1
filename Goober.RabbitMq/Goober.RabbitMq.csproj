@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Internal\Implementation\LimitedHandlerRunner.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="EasyNetQ" Version="3.5.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.1.1" />

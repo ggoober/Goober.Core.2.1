@@ -20,6 +20,6 @@ namespace Goober.RabbitMq.Internal
 
         long? AvgMessagesProcessingDurationInMilliseconds { get; }
 
-        DateTime? LastMessageSuccessProcessedDurationInMilliseconds { get; }
+        long? LastMessageSuccessProcessedDurationInMilliseconds { get; }
     }
 }

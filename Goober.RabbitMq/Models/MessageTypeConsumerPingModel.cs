@@ -20,7 +20,7 @@ namespace Goober.RabbitMq.Models
 
         public long? AvgMessagesProcessingDurationInMilliseconds { get; set; }
 
-        public DateTime? LastMessageSuccessProcessedDurationInMilliseconds { get; set; }
+        public long? LastMessageSuccessProcessedDurationInMilliseconds { get; set; }
 
         public ushort MaxParallelHandlers { get; set; }
 
