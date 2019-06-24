@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Goober.BackgroundWorker.BackgroundServices
+namespace Goober.BackgroundWorker.Models.Metrics
 {
     public interface IListBackgroundMetrics
     {

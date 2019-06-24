@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Goober.BackgroundWorker.BackgroundServices
+namespace Goober.BackgroundWorker.Models.Metrics
 {
     public interface IIterateBackgroundMetrics
     {

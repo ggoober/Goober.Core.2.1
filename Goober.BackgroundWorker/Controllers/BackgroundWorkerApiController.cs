@@ -1,4 +1,4 @@
-﻿using Goober.BackgroundWorker.BackgroundServices;
+﻿using Goober.BackgroundWorker.Models.Metrics;
 using Goober.BackgroundWorker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,7 +83,7 @@ namespace Goober.BackgroundWorker.Controllers
 
         [HttpPost]
         [Route("api/backgroundworker/start")]
-        public virtual async Task StartBackgroundWorker([FromBody]string backgroundWorkerFullName)
+        public virtual async Task StartBackgroundWorkerAsync([FromBody]string backgroundWorkerFullName)
         {
             if (string.IsNullOrEmpty(backgroundWorkerFullName) == true)
                 throw new ArgumentNullException("request.FullName");
@@ -98,7 +98,7 @@ namespace Goober.BackgroundWorker.Controllers
 
         [HttpPost]
         [Route("api/backgroundworker/stop")]
-        public virtual async Task StopBackgroundWorker([FromBody]string backgroundWorkerFullName)
+        public virtual async Task StopBackgroundWorkerAsync([FromBody]string backgroundWorkerFullName)
         {
             var worker = GetBackgroundWorkerByFullName(backgroundWorkerFullName);
 
