@@ -8,12 +8,13 @@ using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Goober.BackgroundWorker
 {
-    public abstract class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IListBackgroundMetrics, IIterateBackgroundMetrics
+    public abstract class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IHostedService, IListBackgroundMetrics, IIterateBackgroundMetrics
         where TListBackgroundService : IListBackgroundService<TItem>
     {
         #region fields
@@ -102,22 +103,45 @@ namespace Goober.BackgroundWorker
             Action<Task> repeatAction = null;
             repeatAction = _ignored1 =>
             {
+                IteratedCount++;
+                LastIterationStartDateTime = DateTime.Now;
+
                 var iterationWatch = new Stopwatch(); ;
                 iterationWatch.Start();
 
-                var listTask = GetItemsListAsync();
-                var processListItemsTask = listTask.ContinueWith(_itemsTask => ProcessListItemsAsync(_itemsTask), StoppingCts.Token);
+                try
+                {
+                    Logger.LogInformation($"Start executing iteration ListBackgroundWorker.ExecuteIteration {this.GetType().Name} iteration ({IteratedCount})");
 
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount}) executing");
+                    var items = GetItemsListAsync();
+                    LastIterationListItemsCount = items.Count;
 
-                listTask.Wait();
-                processListItemsTask.Wait();
+                    ProcessListItemsAsync(items).Wait();
+
+                    iterationWatch.Stop();
+                    LastIterationFinishDateTime = DateTime.Now;
+                    SuccessIteratedCount++;
+                    LastIterationDurationInMilliseconds = iterationWatch.ElapsedMilliseconds;
+                    _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
+                    AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
+
+                    ResetListMetrics();
+
+                    Logger.LogInformation($"Finish iteration ListBackgroundWorker.ExecuteIteration {this.GetType().Name} iteration ({IteratedCount})");
+                }
+                catch (Exception exc)
+                {
+                    Logger.LogError(message: $"Error ListBackgroundWorker.ExecuteIteration {this.GetType().Name} iteration ({IteratedCount})",
+                        exception: exc);
+                }
 
                 Task.Delay(TaskDelay, StoppingCts.Token)
                     .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
             };
 
-            return Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -135,7 +159,7 @@ namespace Goober.BackgroundWorker
             return Task.CompletedTask;
         }
 
-        private async Task<List<TItem>> GetItemsListAsync()
+        private List<TItem> GetItemsListAsync()
         {
             Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount}) executing");
 
@@ -143,13 +167,17 @@ namespace Goober.BackgroundWorker
             {
                 var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
                 if (service == null)
-                    throw new InvalidOperationException($"Can't resolve service {typeof(TListBackgroundService).Name} ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount})");
+                    throw new InvalidOperationException($"Error resolve service {typeof(TListBackgroundService).Name} ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount})");
 
-                return await service.GetItemsAsync();
+                var task = Task.Run(() => service.GetItemsAsync());
+
+                task.Wait();
+
+                return task.Result;
             }
         }
 
-        private async Task ExecuteItemMethodSafetyAsync(SemaphoreSlim semaphore, TItem item, long iterationId, CancellationToken stoppingToken)
+        private void ExecuteItemMethodSafety(SemaphoreSlim semaphore, TItem item, long iterationId, CancellationToken stoppingToken)
         {
             Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
 
@@ -168,7 +196,8 @@ namespace Goober.BackgroundWorker
                         throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
 
 
-                    await service.ProcessItemAsync(item, stoppingToken);
+                    var processTask = Task.Run(() => service.ProcessItemAsync(item, stoppingToken));
+                    processTask.Wait();
                 }
 
                 itemWatcher.Stop();
@@ -189,17 +218,8 @@ namespace Goober.BackgroundWorker
             }
         }
 
-        private async Task ProcessListItemsAsync(Task<List<TItem>> itemsTask)
+        private async Task ProcessListItemsAsync(List<TItem> items)
         {
-            if (itemsTask.Exception != null)
-            {
-                Logger.LogError(message: $"Error ListBackgroundWorker.GetItemsListAsync {this.GetType().Name} iteration ({IteratedCount})", 
-                    exception: itemsTask.Exception);
-                return;
-            }
-
-            var items = itemsTask.Result;
-
             var tasks = new List<Task>();
 
             using (var semaphore = new SemaphoreSlim(MaxDegreeOfParallelism))
@@ -213,17 +233,17 @@ namespace Goober.BackgroundWorker
                         break;
                     }
 
-                    tasks.Add(
-                            ExecuteItemMethodSafetyAsync(semaphore: semaphore,
+                    tasks.Add(Task.Run(() =>
+                            ExecuteItemMethodSafety(semaphore: semaphore,
                                 item: item,
                                 iterationId: IteratedCount,
-                                stoppingToken: StoppingCts.Token));
+                                stoppingToken: StoppingCts.Token)));
                 }
 
                 await Task.WhenAll(tasks);
             }
         }
-        
+
         protected override void SetWorkerHasStopped()
         {
             IteratedCount = 0;

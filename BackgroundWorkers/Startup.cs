@@ -17,7 +17,8 @@ namespace BackgroundWorkers
 
         protected override void ConfigureServiceCollections(IServiceCollection services)
         {
-            services.AddSingleton<IHostedService, IterateTestBackgroundWorker>();
+            //services.AddSingleton<IHostedService, IterateTestBackgroundWorker>();
+            services.AddSingleton<IHostedService, ListTestBackgroundWorker>();
 
             Goober.Core.Extensions.ServiceCollectionExtensions.RegisterAssemblyClasses<IIterateTestBackgroundService>(services);
         }

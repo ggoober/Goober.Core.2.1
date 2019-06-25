@@ -24,7 +24,7 @@ namespace Goober.BackgroundWorker
 
         #region public properties IIterateBackgroundMetrics
 
-        public TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMilliseconds(15);
+        public TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(15);
 
         public long IteratedCount { get; protected set; }
 
@@ -74,7 +74,9 @@ namespace Goober.BackgroundWorker
                     .ContinueWith(_ignored2 => _repeatAction(_ignored2), StoppingCts.Token);
             };
 
-            return Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: _repeatAction, cancellationToken: StoppingCts.Token);
+            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: _repeatAction, cancellationToken: StoppingCts.Token);
+
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -97,8 +99,10 @@ namespace Goober.BackgroundWorker
 
         private void ExecuteIteration()
         {
+            IteratedCount++;
             var iterationWatch = new Stopwatch();
             iterationWatch.Start();
+            LastIterationStartDateTime = DateTime.Now;
 
             Logger.LogInformation($"IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount}) executing");
 
@@ -108,13 +112,14 @@ namespace Goober.BackgroundWorker
                 if (service == null)
                     throw new InvalidOperationException($"IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount}) service {typeof(TIterateBackgroundService).Name}");
 
-                var executeTask = service.ExecuteIterationAsync(StoppingCts.Token);
+                var executeTask = Task.Run(()=> service.ExecuteIterationAsync(StoppingCts.Token));
 
                 executeTask.Wait();
             }
 
             iterationWatch.Stop();
             SuccessIteratedCount++;
+            LastIterationFinishDateTime = DateTime.Now;
             LastIterationDurationInMilliseconds = iterationWatch.ElapsedMilliseconds;
             _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
             AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
