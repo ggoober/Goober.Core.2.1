@@ -1,30 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Goober.BackgroundWorker.Models.Metrics;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Goober.BackgroundWorker
 {
-    public abstract class BaseBackgroundWorker : IHostedService
+    public abstract class BaseBackgroundWorker : ISimpleBackgroundMetrics
     {
         #region fields
 
-        private Task _executingTask;
-
-        private Task _stoppingTask;
-
-        private CancellationTokenSource _stoppingCts = new CancellationTokenSource();
         private Stopwatch _serviceWatch = new Stopwatch();
         private Stopwatch _taskWatch = new Stopwatch();
 
         #endregion
 
         #region protected properties
+
+        protected CancellationTokenSource StoppingCts = new CancellationTokenSource();
 
         protected IServiceProvider ServiceProvider { get; private set; }
 
@@ -34,9 +28,7 @@ namespace Goober.BackgroundWorker
 
         #endregion
 
-        #region public properties
-
-        public string Id { get; protected set; } = "none";
+        #region public properties ISimpleBackgroundMetrics
 
         public DateTime? StartDateTime { get; protected set; }
 
@@ -48,7 +40,7 @@ namespace Goober.BackgroundWorker
 
         public TimeSpan TaskUpTime => _taskWatch.Elapsed;
 
-        public bool IsCancellationRequested => _stoppingCts?.IsCancellationRequested ?? false;
+        public bool IsCancellationRequested => StoppingCts?.IsCancellationRequested ?? false;
 
         #endregion
 
@@ -63,11 +55,13 @@ namespace Goober.BackgroundWorker
 
         #endregion
 
-        public virtual Task StartAsync(CancellationToken cancellationToken)
+        #region protected methods
+
+        protected virtual void SetWorkerIsStarting()
         {
             if (IsRunning == true)
             {
-                throw new InvalidOperationException($"BackgroundWorker ({Id}) start failed, task already executing...");
+                throw new InvalidOperationException($"BackgroundWorker {this.GetType().Name} start failed, task already executing...");
             }
 
             Logger.LogInformation($"BackgroundWorker {this.GetType().Name} is starting...");
@@ -75,94 +69,31 @@ namespace Goober.BackgroundWorker
             StartDateTime = DateTime.Now;
             _serviceWatch.Start();
             _taskWatch.Start();
-
-            try
-            {
-
-                _executingTask = ExecuteAsync(_stoppingCts.Token);
-                _stoppingTask = _executingTask.ContinueWith(FinalizeMetrics, TaskContinuationOptions.ExecuteSynchronously);
-
-                Id = _executingTask.Id.ToString();
-                IsRunning = true;
-
-                Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) has started.");
-            }
-            catch (Exception exc)
-            {
-                Logger.LogCritical(exc, $"BackgroundWorker {this.GetType().Name} ({Id}) start fail");
-
-                SetMetricsOnStop();
-            }
-
-            return _executingTask.IsCompleted ? _executingTask : Task.CompletedTask;
         }
 
-        public virtual Task StopAsync(CancellationToken cancellationToken)
+        protected virtual void SetWorkerHasStarted()
         {
-            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) stoping...");
-            StartDateTime = null;
-            StopDateTime = DateTime.Now;
+            IsRunning = true;
 
-            try
-            {
-                _stoppingCts.Cancel();
-
-
-                if (IsRunning == true)
-                {
-                    var configuration = ServiceProvider.GetService<IConfiguration>();
-                    var stoppingTimeoutMillisecondsKey = this.GetType().Name + ".StoppingTimeoutMilliseconds";
-
-                    var stoppingTimeoutMilliseconds = ToInt(configuration[stoppingTimeoutMillisecondsKey]) ?? 5000;
-
-                    _stoppingTask.Wait(stoppingTimeoutMilliseconds);
-                }
-            }
-            finally
-            {
-                SetMetricsOnStop();
-                Logger.LogInformation($"BackgroundWorker {this.GetType().Name} ({Id}) stopped");
-            }
-
-            return _stoppingTask.IsCompleted ? _stoppingTask : Task.CompletedTask;
+            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} has started.");
         }
 
-        private void FinalizeMetrics(Task task)
+        protected virtual void SetWorkerIsStopping()
         {
-            if (task.Status == TaskStatus.Faulted)
-            {
-                if (task.Exception != null)
-                {
-                    Logger.LogError(exception: task.Exception, message: $"BackgroundWorker ({Id}) fault");
-                }
-                else
-                {
-                    Logger.LogError(message: $"BackgroundWorker ({Id}) fault without exception");
-                }
-            }
-
-            SetMetricsOnStop();
-
-            Logger.LogInformation($"BackgroundWorker ({Id}) finalized");
+            Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} stoping...");
+            StoppingCts.Cancel();
         }
 
-        private void SetMetricsOnStop()
+        protected virtual void SetWorkerHasStopped()
         {
             IsRunning = false;
-            _taskWatch.Reset();
-            Id = "none";
-            _stoppingCts = new CancellationTokenSource();
+            StartDateTime = null;
+            StopDateTime = DateTime.Now;
+            StoppingCts = new CancellationTokenSource();
+
+            Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} has stopped");
         }
 
-        protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
-
-        protected static int? ToInt(string value)
-        {
-            float ret;
-            if (float.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out ret))
-                return Convert.ToInt32(ret);
-
-            return null;
-        }
+        #endregion
     }
 }

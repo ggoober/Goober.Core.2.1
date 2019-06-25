@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,15 +16,6 @@ namespace Goober.BackgroundWorker
     public abstract class ListBackgroundWorker<TItem, TListBackgroundService> : BaseBackgroundWorker, IListBackgroundMetrics, IIterateBackgroundMetrics
         where TListBackgroundService : IListBackgroundService<TItem>
     {
-        public virtual TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(5);
-
-        public int MaxDegreeOfParallelism { get; protected set; } = 1;
-
-        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
-            : base(logger, serviceProvider)
-        {
-        }
-
         #region fields
 
         private long _sumIterationsDurationInMilliseconds;
@@ -32,7 +24,18 @@ namespace Goober.BackgroundWorker
 
         #endregion
 
-        #region public properties
+        #region ctor
+
+        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
+            : base(logger, serviceProvider)
+        {
+        }
+
+        #endregion
+
+        #region public properties IIterateBackgroundMetrics
+
+        public virtual TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(5);
 
         public long IteratedCount { get; private set; }
 
@@ -46,8 +49,13 @@ namespace Goober.BackgroundWorker
 
         public long? AvgIterationDurationInMilliseconds { get; private set; }
 
-        public long? LastIterationListItemsCount { get; private set; }
+        #endregion
 
+        #region public properties IListBackgroundMetrics
+
+        public int MaxDegreeOfParallelism { get; protected set; } = 1;
+
+        public long? LastIterationListItemsCount { get; private set; }
 
         private long _lastIterationListItemExecuteDateTimeInBinnary;
         public DateTime? LastIterationListItemExecuteDateTime
@@ -60,7 +68,6 @@ namespace Goober.BackgroundWorker
                 return DateTime.FromBinary(_lastIterationListItemExecuteDateTimeInBinnary);
             }
         }
-
 
         private long _lastIterationListItemsSuccessProcessedCount;
         public long LastIterationListItemsSuccessProcessedCount => _lastIterationListItemsSuccessProcessedCount;
@@ -87,85 +94,64 @@ namespace Goober.BackgroundWorker
 
         #endregion
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
             SetTaskDelayFromConfiguration();
             SetMaxDegreeOfParallelismFromConfiguration();
 
-            while (stoppingToken.IsCancellationRequested == false)
+            Action<Task> repeatAction = null;
+            repeatAction = _ignored1 =>
             {
-                IteratedCount++;
-                LastIterationStartDateTime = DateTime.Now;
+                var iterationWatch = new Stopwatch(); ;
+                iterationWatch.Start();
 
-                try
-                {
-                    var iterationWatch = new Stopwatch(); ;
-                    iterationWatch.Start();
+                var listTask = GetItemsListAsync();
+                var processListItemsTask = listTask.ContinueWith(_itemsTask => ProcessListItemsAsync(_itemsTask), StoppingCts.Token);
 
-                    List<TItem> items;
+                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount}) executing");
 
-                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) executing");
+                listTask.Wait();
+                processListItemsTask.Wait();
 
-                    using (var scope = ServiceScopeFactory.CreateScope())
-                    {
-                        var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
-                        if (service == null)
-                            throw new InvalidOperationException($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) service {typeof(TListBackgroundService).Name}");
+                Task.Delay(TaskDelay, StoppingCts.Token)
+                    .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
+            };
 
-                        items = await service.GetItemsAsync();
-                    }
+            return Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+        }
 
-                    LastIterationListItemsCount = items.Count;
-                    var tasks = new List<Task>();
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                SetWorkerIsStopping();
+            }
+            finally
+            {
+                Logger.LogInformation($"ListBackgroundWorker {this.GetType().Name} stopped");
+                SetWorkerHasStopped();
+            }
 
-                    using (var semaphore = new SemaphoreSlim(MaxDegreeOfParallelism))
-                    {
-                        foreach (var item in items)
-                        {
-                            await semaphore.WaitAsync();
+            return Task.CompletedTask;
+        }
 
-                            if (stoppingToken.IsCancellationRequested == false)
-                            {
-                                tasks.Add(
-                                    ExecuteItemMethodSafetyAsync(semaphore: semaphore,
-                                        item: item,
-                                        iterationId: IteratedCount,
-                                        stoppingToken: stoppingToken));
-                            }
-                        }
+        private async Task<List<TItem>> GetItemsListAsync()
+        {
+            Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount}) executing");
 
-                        await Task.WhenAll(tasks);
-                    }
+            using (var scope = ServiceScopeFactory.CreateScope())
+            {
+                var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
+                if (service == null)
+                    throw new InvalidOperationException($"Can't resolve service {typeof(TListBackgroundService).Name} ListBackgroundWorker.ExecuteAsync {this.GetType().Name} iteration ({IteratedCount})");
 
-                    iterationWatch.Stop();
-                    LastIterationFinishDateTime = DateTime.Now;
-                    SuccessIteratedCount++;
-                    LastIterationDurationInMilliseconds = iterationWatch.ElapsedMilliseconds;
-                    _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
-                    AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
-
-                    ResetListItemMetrics();
-
-                    Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) finished");
-                }
-                catch (Exception exc)
-                {
-                    this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) fail");
-                }
-
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
-
-                LastIterationFinishDateTime = DateTime.Now;
-
-                await Task.Delay(TaskDelay, stoppingToken);
-
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteAsync {this.GetType().Name} ({Id}) iteration ({IteratedCount}) waiting :{TaskDelay.TotalSeconds}s");
+                return await service.GetItemsAsync();
             }
         }
 
         private async Task ExecuteItemMethodSafetyAsync(SemaphoreSlim semaphore, TItem item, long iterationId, CancellationToken stoppingToken)
         {
-            Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
+            Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) start processing item: {JsonConvert.SerializeObject(item)}");
 
             Interlocked.Increment(ref _lastIterationListItemsProcessedCount);
             Interlocked.Exchange(ref _lastIterationListItemExecuteDateTimeInBinnary, DateTime.Now.ToBinary());
@@ -179,7 +165,7 @@ namespace Goober.BackgroundWorker
                 {
                     var service = scope.ServiceProvider.GetRequiredService<TListBackgroundService>() as IListBackgroundService<TItem>;
                     if (service == null)
-                        throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
+                        throw new InvalidOperationException($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) service {typeof(TListBackgroundService).Name}");
 
 
                     await service.ProcessItemAsync(item, stoppingToken);
@@ -191,11 +177,11 @@ namespace Goober.BackgroundWorker
                 Interlocked.Exchange(ref _lastIterationListItemsLastDurationInMilliseconds, itemWatcher.ElapsedMilliseconds);
                 Interlocked.Add(ref _lastIterationListItemsSumDurationInMilliseconds, _lastIterationListItemsLastDurationInMilliseconds);
 
-                Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");
+                Logger.LogInformation($"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) finish processing item: {JsonConvert.SerializeObject(item)}");
             }
             catch (Exception exc)
             {
-                this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} ({Id}) iteration ({iterationId}) fail, item: {JsonConvert.SerializeObject(item)}");
+                this.Logger.LogError(exception: exc, message: $"ListBackgroundWorker.ExecuteItemMethodSafety {this.GetType().Name} iteration ({iterationId}) fail, item: {JsonConvert.SerializeObject(item)}");
             }
             finally
             {
@@ -203,21 +189,42 @@ namespace Goober.BackgroundWorker
             }
         }
 
-        public override Task StartAsync(CancellationToken cancellationToken)
+        private async Task ProcessListItemsAsync(Task<List<TItem>> itemsTask)
         {
-            ResetMetrics();
+            if (itemsTask.Exception != null)
+            {
+                Logger.LogError(message: $"Error ListBackgroundWorker.GetItemsListAsync {this.GetType().Name} iteration ({IteratedCount})", 
+                    exception: itemsTask.Exception);
+                return;
+            }
 
-            return base.StartAsync(cancellationToken);
+            var items = itemsTask.Result;
+
+            var tasks = new List<Task>();
+
+            using (var semaphore = new SemaphoreSlim(MaxDegreeOfParallelism))
+            {
+                foreach (var item in items)
+                {
+                    await semaphore.WaitAsync();
+
+                    if (StoppingCts.IsCancellationRequested == true)
+                    {
+                        break;
+                    }
+
+                    tasks.Add(
+                            ExecuteItemMethodSafetyAsync(semaphore: semaphore,
+                                item: item,
+                                iterationId: IteratedCount,
+                                stoppingToken: StoppingCts.Token));
+                }
+
+                await Task.WhenAll(tasks);
+            }
         }
-
-        public override Task StopAsync(CancellationToken cancellationToken)
-        {
-            ResetMetrics();
-
-            return base.StopAsync(cancellationToken);
-        }
-
-        private void ResetMetrics()
+        
+        protected override void SetWorkerHasStopped()
         {
             IteratedCount = 0;
             SuccessIteratedCount = 0;
@@ -229,10 +236,12 @@ namespace Goober.BackgroundWorker
             _sumIterationsDurationInMilliseconds = 0;
             AvgIterationDurationInMilliseconds = 0;
 
-            ResetListItemMetrics();
+            ResetListMetrics();
+
+            base.SetWorkerHasStopped();
         }
 
-        private void ResetListItemMetrics()
+        private void ResetListMetrics()
         {
             LastIterationListItemsCount = 0;
             _lastIterationListItemsProcessedCount = 0;
@@ -247,7 +256,7 @@ namespace Goober.BackgroundWorker
         {
             var configuration = ServiceProvider.GetService<IConfiguration>();
             var taskDelayInMillisecondsConfigKey = this.GetType().Name + ".TaskDelayInMilliseconds";
-            var taskDelayInMilliseconds = ToInt(configuration[taskDelayInMillisecondsConfigKey]);
+            var taskDelayInMilliseconds = configuration[taskDelayInMillisecondsConfigKey].ToInt();
             if (taskDelayInMilliseconds.HasValue)
             {
                 TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
@@ -258,7 +267,7 @@ namespace Goober.BackgroundWorker
         {
             var configuration = ServiceProvider.GetService<IConfiguration>();
             var maxDegreeOfParallelismConfigKey = this.GetType().Name + ".MaxDegreeOfParallelism";
-            var maxDegreeOfParallelism = ToInt(configuration[maxDegreeOfParallelismConfigKey]);
+            var maxDegreeOfParallelism = configuration[maxDegreeOfParallelismConfigKey].ToInt();
             if (maxDegreeOfParallelism.HasValue)
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism.Value;

@@ -34,7 +34,6 @@ namespace Goober.BackgroundWorker.Controllers
 
                 var newWorker = new BackgroundWorkerPingModel
                 {
-                    Id = backgroundWorker.Id,
                     IsRunning = backgroundWorker.IsRunning,
                     Name = backgroundWorker.GetType().FullName,
                     ServiceUpTimeInSec = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
@@ -109,13 +108,13 @@ namespace Goober.BackgroundWorker.Controllers
         }
 
 
-        private BaseBackgroundWorker GetBackgroundWorkerByFullName(string fullName)
+        private IHostedService GetBackgroundWorkerByFullName(string fullName)
         {
             var workers = _serviceProvider.GetServices<IHostedService>();
 
             foreach (var iWorker in workers)
             {
-                var backgroundWorker = iWorker as BaseBackgroundWorker;
+                var backgroundWorker = iWorker as IHostedService;
                 if (backgroundWorker == null)
                     continue;
 
