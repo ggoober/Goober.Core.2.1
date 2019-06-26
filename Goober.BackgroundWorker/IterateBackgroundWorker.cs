@@ -4,19 +4,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
+using Goober.BackgroundWorker.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Goober.BackgroundWorker
 {
-    public abstract class IterateBackgroundWorker<TIterateBackgroundService>: BaseBackgroundWorker, IHostedService, IIterateBackgroundMetrics
-        where TIterateBackgroundService: IIterateBackgroundService
+    public abstract class IterateBackgroundWorker<TIterateBackgroundService> : BaseBackgroundWorker, IHostedService, IIterateBackgroundMetrics
+        where TIterateBackgroundService : IIterateBackgroundService
     {
         #region fields
 
-        private Action<Task> _repeatAction;
 
         private long _sumIterationsDurationInMilliseconds { get; set; }
 
@@ -42,10 +43,11 @@ namespace Goober.BackgroundWorker
 
         #region ctor
 
-        public IterateBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
-            : base(logger, serviceProvider)
+        public IterateBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
+            : base(logger, serviceProvider, optionsAccessor)
         {
-            
+            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 300000;
+            TaskDelay = TimeSpan.FromMilliseconds(iterationDelayInMilliseconds);
         }
 
         #endregion
@@ -54,27 +56,31 @@ namespace Goober.BackgroundWorker
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            SetTaskDelayFromConfiguration();
+            if (IsDisabled == true)
+            {
+                Logger.LogInformation(message: $"{ClassName} is disabled");
+                return Task.CompletedTask;
+            }
 
             SetWorkerIsStarting();
-
-            _repeatAction = _ignored1 =>
-            {
-                try
+            Action<Task> repeatAction = null;
+            repeatAction = _ignored1 =>
                 {
-                    ExecuteIteration();
-                }
-                catch (Exception exc)
-                {
-                    Logger.LogError(exception: exc,
-                        message: $"Fail IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount})");
-                }
+                    try
+                    {
+                        ExecuteIteration();
+                    }
+                    catch (Exception exc)
+                    {
+                        Logger.LogError(exception: exc,
+                            message: $"Error executeIteration for worker {ClassName} iterate ({IteratedCount})");
+                    }
 
-                Task.Delay(TaskDelay, StoppingCts.Token)
-                    .ContinueWith(_ignored2 => _repeatAction(_ignored2), StoppingCts.Token);
-            };
+                    Task.Delay(TaskDelay, StoppingCts.Token)
+                        .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
+                };
 
-            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: _repeatAction, cancellationToken: StoppingCts.Token);
+            Task.Run(() => repeatAction, StoppingCts.Token);
 
             return Task.CompletedTask;
         }
@@ -88,7 +94,7 @@ namespace Goober.BackgroundWorker
             }
             finally
             {
-                Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} stopped");
+                Logger.LogInformation($"Worker {this.GetType().Name} stopped");
                 SetWorkerHasStopped();
             }
 
@@ -104,15 +110,15 @@ namespace Goober.BackgroundWorker
             iterationWatch.Start();
             LastIterationStartDateTime = DateTime.Now;
 
-            Logger.LogInformation($"IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount}) executing");
+            Logger.LogInformation($"Worker {ClassName} iterate ({IteratedCount}) executing");
 
             using (var scope = ServiceScopeFactory.CreateScope())
             {
                 var service = scope.ServiceProvider.GetRequiredService<TIterateBackgroundService>() as IIterateBackgroundService;
                 if (service == null)
-                    throw new InvalidOperationException($"IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount}) service {typeof(TIterateBackgroundService).Name}");
+                    throw new InvalidOperationException($"Can't resolve service {typeof(TIterateBackgroundService).Name} for worker {ClassName} iterate ({IteratedCount})");
 
-                var executeTask = Task.Run(()=> service.ExecuteIterationAsync(StoppingCts.Token));
+                var executeTask = Task.Run(() => service.ExecuteIterationAsync(StoppingCts.Token));
 
                 executeTask.Wait();
             }
@@ -124,18 +130,7 @@ namespace Goober.BackgroundWorker
             _sumIterationsDurationInMilliseconds += LastIterationDurationInMilliseconds.Value;
             AvgIterationDurationInMilliseconds = _sumIterationsDurationInMilliseconds / SuccessIteratedCount;
 
-            Logger.LogInformation($"IterateBackgroundWorker.ExecuteIteration {this.GetType().Name} iterate ({IteratedCount}) finished");
-        }
-
-        private void SetTaskDelayFromConfiguration()
-        {
-            var configuration = ServiceProvider.GetService<IConfiguration>();
-            var taskDelayInMillisecondsConfigKey = this.GetType().Name + ".TaskDelayInMilliseconds";
-            var taskDelayInMilliseconds = configuration[taskDelayInMillisecondsConfigKey].ToInt();
-            if (taskDelayInMilliseconds.HasValue)
-            {
-                TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
-            }
+            Logger.LogInformation($"Worker {ClassName} iterate ({IteratedCount}) finished");
         }
 
         protected override void SetWorkerHasStopped()

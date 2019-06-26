@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
+using Goober.BackgroundWorker.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Goober.BackgroundWorker
@@ -27,9 +28,13 @@ namespace Goober.BackgroundWorker
 
         #region ctor
 
-        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
-            : base(logger, serviceProvider)
+        public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
+            : base(logger, serviceProvider, optionsAccessor)
         {
+            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 300000;
+            TaskDelay = TimeSpan.FromMilliseconds(iterationDelayInMilliseconds);
+
+            MaxDegreeOfParallelism = (int) (_options.ListMaxDegreeOfParallelism ?? 1);
         }
 
         #endregion
@@ -77,7 +82,6 @@ namespace Goober.BackgroundWorker
         private long _lastIterationListItemsProcessedCount;
         public long LastIterationListItemsProcessedCount => _lastIterationListItemsProcessedCount;
 
-
         public long LastIterationListItemsAvgDurationInMilliseconds
         {
             get
@@ -89,7 +93,6 @@ namespace Goober.BackgroundWorker
             }
         }
 
-
         private long _lastIterationListItemsLastDurationInMilliseconds;
         public long LastIterationListItemsLastDurationInMilliseconds => _lastIterationListItemsLastDurationInMilliseconds;
 
@@ -97,8 +100,11 @@ namespace Goober.BackgroundWorker
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            SetTaskDelayFromConfiguration();
-            SetMaxDegreeOfParallelismFromConfiguration();
+            if (IsDisabled == true)
+            {
+                Logger.LogInformation(message: $"ListBackgroundWorker {this.GetType().Name} is disabled");
+                return Task.CompletedTask;
+            }
 
             Action<Task> repeatAction = null;
             repeatAction = _ignored1 =>
@@ -139,7 +145,7 @@ namespace Goober.BackgroundWorker
                     .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
             };
 
-            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+            Task.Run(() => repeatAction, StoppingCts.Token);
 
             return Task.CompletedTask;
         }
@@ -280,17 +286,6 @@ namespace Goober.BackgroundWorker
             if (taskDelayInMilliseconds.HasValue)
             {
                 TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
-            }
-        }
-
-        private void SetMaxDegreeOfParallelismFromConfiguration()
-        {
-            var configuration = ServiceProvider.GetService<IConfiguration>();
-            var maxDegreeOfParallelismConfigKey = this.GetType().Name + ".MaxDegreeOfParallelism";
-            var maxDegreeOfParallelism = configuration[maxDegreeOfParallelismConfigKey].ToInt();
-            if (maxDegreeOfParallelism.HasValue)
-            {
-                MaxDegreeOfParallelism = maxDegreeOfParallelism.Value;
             }
         }
     }

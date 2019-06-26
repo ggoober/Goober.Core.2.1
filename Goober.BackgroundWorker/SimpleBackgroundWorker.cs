@@ -1,9 +1,11 @@
 ﻿using Goober.BackgroundWorker;
 using Goober.BackgroundWorker.Extensions;
+using Goober.BackgroundWorker.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,8 +24,8 @@ namespace Goober.SimpleBackgroundWorker
 
         #region ctor
 
-        public SimpleSimpleBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
-            : base(logger, serviceProvider)
+        public SimpleSimpleBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
+            : base(logger, serviceProvider, optionsAccessor)
         {
         }
 
@@ -33,6 +35,12 @@ namespace Goober.SimpleBackgroundWorker
 
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
+            if (IsDisabled == true)
+            {
+                Logger.LogInformation(message: $"SimpleBackgroundWorker {this.GetType().Name} is disabled");
+                return Task.CompletedTask;
+            }
+
             SetWorkerIsStarting();
 
             try
@@ -49,7 +57,7 @@ namespace Goober.SimpleBackgroundWorker
                 SetWorkerHasStopped();
             }
 
-            return _executingTask.IsCompleted ? _executingTask : Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         #region private methods

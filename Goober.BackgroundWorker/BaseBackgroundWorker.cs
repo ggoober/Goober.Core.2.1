@@ -1,8 +1,11 @@
 ﻿using Goober.BackgroundWorker.Models.Metrics;
+using Goober.BackgroundWorker.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Goober.BackgroundWorker
@@ -18,6 +21,10 @@ namespace Goober.BackgroundWorker
 
         #region protected properties
 
+        protected string ClassName { get; set; }
+
+        protected BackgroundWorkerOptionModel _options;
+
         protected CancellationTokenSource StoppingCts = new CancellationTokenSource();
 
         protected IServiceProvider ServiceProvider { get; private set; }
@@ -29,6 +36,8 @@ namespace Goober.BackgroundWorker
         #endregion
 
         #region public properties ISimpleBackgroundMetrics
+
+        public bool IsDisabled { get; set; }
 
         public DateTime? StartDateTime { get; protected set; }
 
@@ -46,11 +55,22 @@ namespace Goober.BackgroundWorker
 
         #region ctor
 
-        public BaseBackgroundWorker(ILogger logger, IServiceProvider serviceProvider)
+        public BaseBackgroundWorker(ILogger logger, IServiceProvider serviceProvider,
+            IOptions<BackgroundWorkersOptions> optionsAccessor)
         {
             Logger = logger;
             ServiceProvider = serviceProvider;
             ServiceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+
+            ClassName = this.GetType().Name;
+
+            _options = optionsAccessor.Value?.Workers?.FirstOrDefault(x => x.ClassName == ClassName);
+            if (_options == null)
+            {
+                _options = new BackgroundWorkerOptionModel();
+            }
+
+            IsDisabled = _options.IsDisabled;
         }
 
         #endregion
@@ -61,10 +81,10 @@ namespace Goober.BackgroundWorker
         {
             if (IsRunning == true)
             {
-                throw new InvalidOperationException($"BackgroundWorker {this.GetType().Name} start failed, task already executing...");
+                throw new InvalidOperationException($"Worker {ClassName} start failed, task already executing...");
             }
 
-            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} is starting...");
+            Logger.LogInformation($"Worker {ClassName} is starting...");
 
             StartDateTime = DateTime.Now;
             _serviceWatch.Start();
@@ -75,12 +95,12 @@ namespace Goober.BackgroundWorker
         {
             IsRunning = true;
 
-            Logger.LogInformation($"BackgroundWorker {this.GetType().Name} has started.");
+            Logger.LogInformation($"Worker {ClassName} has started.");
         }
 
         protected virtual void SetWorkerIsStopping()
         {
-            Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} stoping...");
+            Logger.LogInformation($"Worker {ClassName} stoping...");
             StoppingCts.Cancel();
         }
 
@@ -91,7 +111,7 @@ namespace Goober.BackgroundWorker
             StopDateTime = DateTime.Now;
             StoppingCts = new CancellationTokenSource();
 
-            Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} has stopped");
+            Logger.LogInformation($"Worker {ClassName} has stopped");
         }
 
         #endregion
