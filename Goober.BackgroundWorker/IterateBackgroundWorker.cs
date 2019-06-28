@@ -2,10 +2,8 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
 using Goober.BackgroundWorker.Options;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
