@@ -10,6 +10,8 @@ namespace Goober.BackgroundWorker.Models.Metrics
 
         DateTime? StopDateTime { get; }
 
+        bool IsDisabled { get; set; }
+
         bool IsRunning { get; }
 
         TimeSpan ServiceUpTime { get; }

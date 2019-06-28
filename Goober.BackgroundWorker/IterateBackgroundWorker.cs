@@ -25,7 +25,7 @@ namespace Goober.BackgroundWorker
 
         #region public properties IIterateBackgroundMetrics
 
-        public TimeSpan TaskDelay { get; protected set; } = TimeSpan.FromMinutes(15);
+        public TimeSpan TaskDelay { get; protected set; }
 
         public long IteratedCount { get; protected set; }
 
@@ -46,7 +46,7 @@ namespace Goober.BackgroundWorker
         public IterateBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
             : base(logger, serviceProvider, optionsAccessor)
         {
-            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 300000;
+            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 900000;
             TaskDelay = TimeSpan.FromMilliseconds(iterationDelayInMilliseconds);
         }
 
@@ -80,7 +80,9 @@ namespace Goober.BackgroundWorker
                         .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
                 };
 
-            Task.Run(() => repeatAction, StoppingCts.Token);
+            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+
+            SetWorkerHasStarted();
 
             return Task.CompletedTask;
         }

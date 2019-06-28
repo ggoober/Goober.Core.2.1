@@ -31,7 +31,7 @@ namespace Goober.BackgroundWorker
         public ListBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
             : base(logger, serviceProvider, optionsAccessor)
         {
-            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 300000;
+            var iterationDelayInMilliseconds = _options.IterationDelayInMilliseconds ?? 900000;
             TaskDelay = TimeSpan.FromMilliseconds(iterationDelayInMilliseconds);
 
             MaxDegreeOfParallelism = (int) (_options.ListMaxDegreeOfParallelism ?? 1);
@@ -145,7 +145,9 @@ namespace Goober.BackgroundWorker
                     .ContinueWith(_ignored2 => repeatAction(_ignored2), StoppingCts.Token);
             };
 
-            Task.Run(() => repeatAction, StoppingCts.Token);
+            Task.Delay(5000, StoppingCts.Token).ContinueWith(continuationAction: repeatAction, cancellationToken: StoppingCts.Token);
+
+            SetWorkerHasStarted();
 
             return Task.CompletedTask;
         }

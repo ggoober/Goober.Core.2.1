@@ -1,69 +1,48 @@
 ﻿using Goober.BackgroundWorker.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Goober.BackgroundWorker
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddBackgroundWorkers(this IServiceCollection services,
+        public static void AddBackgroundWorkers<TAssemblyClassName>(this IServiceCollection services,
             IConfiguration configuration,
             string sectionName = "BackgroundWorkers")
         {
             services.Configure<BackgroundWorkersOptions>(configuration.GetSection(sectionName));
+
+            services.RegisterBackgroundWorkers(typeof(TAssemblyClassName).Assembly);
         }
 
-
-
-        public static void RegisterClasses(this IServiceCollection services,
-            Assembly assembly,
-            List<string> classesPostfix,
-            ServiceLifetime serviceLifetime,
-            bool optional)
+        private static void RegisterBackgroundWorkers(this IServiceCollection services,
+            Assembly assembly)
         {
-            if (classesPostfix == null || classesPostfix.Any() == false)
-                throw new InvalidOperationException();
-            var implementTypes = new List<Type>();
+            var backgroundWorkers = new List<Type>();
 
             foreach (var assemblyDefinedType in assembly.GetTypes())
             {
-                if (classesPostfix.Any(x => assemblyDefinedType.Name.EndsWith(x)))
+                if (assemblyDefinedType.Name.EndsWith("BackgroundWorker"))
                 {
-                    var attribute = assemblyDefinedType.GetCustomAttributes(typeof(ServiceCollectionIgnoreRegistrationAttribute), false).FirstOrDefault();
-
-                    if (attribute != null)
-                        continue;
-
                     if (assemblyDefinedType.IsClass == false)
                         continue;
 
-                    implementTypes.Add(assemblyDefinedType);
+                    if (assemblyDefinedType.GetInterfaces().Contains(typeof(IHostedService)) == false)
+                        continue;
+
+                    backgroundWorkers.Add(assemblyDefinedType);
                 }
             }
 
-            foreach (var implementType in implementTypes)
+            foreach (var implementType in backgroundWorkers)
             {
-                var interfaceName = "I" + implementType.Name;
-                var interfaceType = implementType.GetInterface(interfaceName);
-
-                if (interfaceType == null && optional == false)
-                    throw new InvalidOperationException($"Can't find interface = {interfaceName} for class.Name = {implementType.Name}, class.FullName = {implementType.FullName}. Add 'HermesIgnoreRegistrationAttribute' if need ");
-
-                services.Add(new ServiceDescriptor(interfaceType, implementType, serviceLifetime));
+                services.Add(new ServiceDescriptor(typeof(IHostedService), implementType, ServiceLifetime.Singleton));
             }
-        }
-
-        public static void RegisterAssemblyClasses<TAssemblyClassName>(this IServiceCollection services, List<string> classesPostfix = null, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped, bool optional = false)
-            where TAssemblyClassName : class
-        {
-            RegisterClasses(services: services,
-                assembly: typeof(TAssemblyClassName).Assembly,
-                classesPostfix: classesPostfix ?? ServiceAndRepositoryPostfix,
-                serviceLifetime: serviceLifetime,
-                optional: optional);
         }
     }
 }

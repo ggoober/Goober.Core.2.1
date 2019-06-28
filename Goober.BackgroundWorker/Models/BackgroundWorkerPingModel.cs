@@ -6,6 +6,8 @@ namespace Goober.BackgroundWorker.Models
     {
         public string Name { get; set; }
 
+        public bool IsDisabled { get; set; }
+
         public bool IsRunning { get; set; }
 
         public bool IsCancellationRequested { get; set; }

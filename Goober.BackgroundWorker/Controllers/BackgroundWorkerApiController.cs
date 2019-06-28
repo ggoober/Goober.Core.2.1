@@ -34,6 +34,7 @@ namespace Goober.BackgroundWorker.Controllers
 
                 var newWorker = new BackgroundWorkerPingModel
                 {
+                    IsDisabled = backgroundWorker.IsDisabled,
                     IsRunning = backgroundWorker.IsRunning,
                     Name = backgroundWorker.GetType().FullName,
                     ServiceUpTimeInSec = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),

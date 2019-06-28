@@ -85,7 +85,7 @@ namespace Goober.BackgroundWorker
             }
 
             Logger.LogInformation($"Worker {ClassName} is starting...");
-
+            
             StartDateTime = DateTime.Now;
             _serviceWatch.Start();
             _taskWatch.Start();

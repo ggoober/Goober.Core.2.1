@@ -1,10 +1,10 @@
-﻿using BackgroundWorkers.BackgroundWorkers;
-using BackgroundWorkers.Services;
+﻿using BackgroundWorkers.Services;
+using Goober.BackgroundWorker;
+using Goober.Core.Extensions;
 using Goober.WebApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace BackgroundWorkers
@@ -17,10 +17,8 @@ namespace BackgroundWorkers
 
         protected override void ConfigureServiceCollections(IServiceCollection services)
         {
-            //services.AddSingleton<IHostedService, IterateTestBackgroundWorker>();
-            services.AddSingleton<IHostedService, ListTestBackgroundWorker>();
-
-            Goober.Core.Extensions.ServiceCollectionExtensions.RegisterAssemblyClasses<IIterateTestBackgroundService>(services);
+            services.AddBackgroundWorkers<IIterateTestBackgroundService>(Configuration);
+            services.RegisterAssemblyClasses<IIterateTestBackgroundService>();
         }
 
         protected override void ConfigurePipelineAfterExceptionsHandling(IApplicationBuilder app)
