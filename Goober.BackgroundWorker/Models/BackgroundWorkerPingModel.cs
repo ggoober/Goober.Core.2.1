@@ -14,8 +14,6 @@ namespace Goober.BackgroundWorker.Models
 
         public long ServiceUpTimeInSec { get; set; }
 
-        public long TaskUpTimeInSec { get; set; }
-
         public DateTime? StartDateTime { get; set; }
 
         public DateTime? StopDateTime { get; set; }

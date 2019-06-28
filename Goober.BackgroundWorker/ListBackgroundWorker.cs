@@ -106,6 +106,8 @@ namespace Goober.BackgroundWorker
                 return Task.CompletedTask;
             }
 
+            SetWorkerIsStarting();
+
             Action<Task> repeatAction = null;
             repeatAction = _ignored1 =>
             {

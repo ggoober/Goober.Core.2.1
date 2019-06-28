@@ -15,7 +15,6 @@ namespace Goober.BackgroundWorker
         #region fields
 
         private Stopwatch _serviceWatch = new Stopwatch();
-        private Stopwatch _taskWatch = new Stopwatch();
 
         #endregion
 
@@ -46,8 +45,6 @@ namespace Goober.BackgroundWorker
         public bool IsRunning { get; protected set; } = false;
 
         public TimeSpan ServiceUpTime => _serviceWatch.Elapsed;
-
-        public TimeSpan TaskUpTime => _taskWatch.Elapsed;
 
         public bool IsCancellationRequested => StoppingCts?.IsCancellationRequested ?? false;
 
@@ -85,10 +82,6 @@ namespace Goober.BackgroundWorker
             }
 
             Logger.LogInformation($"Worker {ClassName} is starting...");
-            
-            StartDateTime = DateTime.Now;
-            _serviceWatch.Start();
-            _taskWatch.Start();
         }
 
         protected virtual void SetWorkerHasStarted()
@@ -96,6 +89,9 @@ namespace Goober.BackgroundWorker
             IsRunning = true;
 
             Logger.LogInformation($"Worker {ClassName} has started.");
+
+            StartDateTime = DateTime.Now;
+            _serviceWatch.Start();
         }
 
         protected virtual void SetWorkerIsStopping()

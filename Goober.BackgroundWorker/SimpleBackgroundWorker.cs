@@ -1,8 +1,5 @@
 ﻿using Goober.BackgroundWorker;
-using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Options;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,19 +9,11 @@ using System.Threading.Tasks;
 
 namespace Goober.SimpleBackgroundWorker
 {
-    public abstract class SimpleSimpleBackgroundWorker : BaseBackgroundWorker, IHostedService
+    public abstract class SimpleBackgroundWorker : BaseBackgroundWorker, IHostedService
     {
-        #region fields
-
-        private Task _executingTask;
-
-        private Task _stoppingTask;
-
-        #endregion
-
         #region ctor
 
-        public SimpleSimpleBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
+        public SimpleBackgroundWorker(ILogger logger, IServiceProvider serviceProvider, IOptions<BackgroundWorkersOptions> optionsAccessor)
             : base(logger, serviceProvider, optionsAccessor)
         {
         }
@@ -37,7 +26,7 @@ namespace Goober.SimpleBackgroundWorker
         {
             if (IsDisabled == true)
             {
-                Logger.LogInformation(message: $"SimpleBackgroundWorker {this.GetType().Name} is disabled");
+                Logger.LogInformation(message: $"{this.GetType().Name} is disabled");
                 return Task.CompletedTask;
             }
 
@@ -45,14 +34,24 @@ namespace Goober.SimpleBackgroundWorker
 
             try
             {
-                _executingTask = ExecuteAsync(StoppingCts.Token);
-                _stoppingTask = _executingTask.ContinueWith(FinalizeMetrics);
+                var executingTask = new Task(() => ExecuteAsync(StoppingCts.Token));
+                executingTask.ContinueWith(primaryTask =>
+                {
+                    if (primaryTask.Exception != null)
+                    {
+                        Logger.LogError(primaryTask.Exception, $"Error: {this.GetType().Name}");
+                    }
+
+                    Logger.LogInformation(message: $"ExecuteAsync finished {this.GetType().Name} with State {primaryTask.Status}");
+                });
+
+                executingTask.Start();
 
                 SetWorkerHasStarted();
             }
             catch (Exception exc)
             {
-                Logger.LogCritical(exc, $"SimpleBackgroundWorker {this.GetType().Name} start fail");
+                Logger.LogCritical(exc, $"Error: {this.GetType().Name}");
 
                 SetWorkerHasStopped();
             }
@@ -66,47 +65,14 @@ namespace Goober.SimpleBackgroundWorker
         {
             SetWorkerIsStopping();
 
-            try
-            {
-                if (IsRunning == true)
-                {
-                    var configuration = ServiceProvider.GetService<IConfiguration>();
-                    var stoppingTimeoutMillisecondsKey = this.GetType().Name + ".StoppingTimeoutMilliseconds";
-
-                    var stoppingTimeoutMilliseconds = configuration[stoppingTimeoutMillisecondsKey].ToInt() ?? 5000;
-
-                    _stoppingTask.Wait(stoppingTimeoutMilliseconds);
-                }
-            }
-            finally
-            {
-                Logger.LogInformation($"SimpleBackgroundWorker {this.GetType().Name} stopped");
-                SetWorkerHasStopped();
-            }
-
-            return _stoppingTask.IsCompleted ? _stoppingTask : Task.CompletedTask;
-        }
-
-        #endregion
-
-        #endregion
-
-        private void FinalizeMetrics(Task task)
-        {
-            if (task.Status == TaskStatus.Faulted)
-            {
-                if (task.Exception != null)
-                {
-                    Logger.LogError(exception: task.Exception, message: $"SimpleBackgroundWorker fault");
-                }
-                else
-                {
-                    Logger.LogError(message: $"SimpleBackgroundWorker fault without exception");
-                }
-            }
-
             SetWorkerHasStopped();
+
+            return Task.CompletedTask;
         }
+
+        #endregion
+
+        #endregion
 
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
     }

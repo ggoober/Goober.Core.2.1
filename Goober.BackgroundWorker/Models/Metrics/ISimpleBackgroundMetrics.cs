@@ -16,8 +16,6 @@ namespace Goober.BackgroundWorker.Models.Metrics
 
         TimeSpan ServiceUpTime { get; }
 
-        TimeSpan TaskUpTime { get; }
-
         bool IsCancellationRequested { get; }
     }
 }

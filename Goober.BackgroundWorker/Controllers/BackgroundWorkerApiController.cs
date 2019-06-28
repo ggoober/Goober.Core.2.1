@@ -38,7 +38,6 @@ namespace Goober.BackgroundWorker.Controllers
                     IsRunning = backgroundWorker.IsRunning,
                     Name = backgroundWorker.GetType().FullName,
                     ServiceUpTimeInSec = Convert.ToInt64(backgroundWorker.ServiceUpTime.TotalSeconds),
-                    TaskUpTimeInSec = Convert.ToInt64(backgroundWorker.TaskUpTime.TotalSeconds),
                     IsCancellationRequested  = backgroundWorker.IsCancellationRequested
                 };
 
