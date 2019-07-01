@@ -86,10 +86,9 @@ namespace Goober.BackgroundWorker
 
         protected virtual void SetWorkerHasStarted()
         {
-            IsRunning = true;
-
             Logger.LogInformation($"Worker {ClassName} has started.");
 
+            IsRunning = true;
             StartDateTime = DateTime.Now;
             _serviceWatch.Start();
         }
@@ -103,9 +102,9 @@ namespace Goober.BackgroundWorker
         protected virtual void SetWorkerHasStopped()
         {
             IsRunning = false;
-            StartDateTime = null;
             StopDateTime = DateTime.Now;
             StoppingCts = new CancellationTokenSource();
+            _serviceWatch.Stop();
 
             Logger.LogInformation($"Worker {ClassName} has stopped");
         }

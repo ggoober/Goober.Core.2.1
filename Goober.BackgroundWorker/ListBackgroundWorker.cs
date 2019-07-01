@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Goober.BackgroundWorker.Extensions;
 using Goober.BackgroundWorker.Models.Metrics;
 using Goober.BackgroundWorker.Options;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -254,7 +252,7 @@ namespace Goober.BackgroundWorker
             }
         }
 
-        protected override void SetWorkerHasStopped()
+        protected override void SetWorkerHasStarted()
         {
             IteratedCount = 0;
             SuccessIteratedCount = 0;
@@ -268,6 +266,11 @@ namespace Goober.BackgroundWorker
 
             ResetListMetrics();
 
+            base.SetWorkerHasStarted();
+        }
+
+        protected override void SetWorkerHasStopped()
+        {
             base.SetWorkerHasStopped();
         }
 
@@ -280,17 +283,6 @@ namespace Goober.BackgroundWorker
             _lastIterationListItemsSumDurationInMilliseconds = 0;
             _lastIterationListItemsLastDurationInMilliseconds = 0;
             _lastIterationListItemExecuteDateTimeInBinnary = 0;
-        }
-
-        private void SetTaskDelayFromConfiguration()
-        {
-            var configuration = ServiceProvider.GetService<IConfiguration>();
-            var taskDelayInMillisecondsConfigKey = this.GetType().Name + ".TaskDelayInMilliseconds";
-            var taskDelayInMilliseconds = configuration[taskDelayInMillisecondsConfigKey].ToInt();
-            if (taskDelayInMilliseconds.HasValue)
-            {
-                TaskDelay = TimeSpan.FromMilliseconds(taskDelayInMilliseconds.Value);
-            }
         }
     }
 }

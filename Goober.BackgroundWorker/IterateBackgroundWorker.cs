@@ -133,7 +133,7 @@ namespace Goober.BackgroundWorker
             Logger.LogInformation($"Worker {ClassName} iterate ({IteratedCount}) finished");
         }
 
-        protected override void SetWorkerHasStopped()
+        protected override void SetWorkerHasStarted()
         {
             IteratedCount = 0;
             SuccessIteratedCount = 0;
@@ -147,6 +147,12 @@ namespace Goober.BackgroundWorker
             AvgIterationDurationInMilliseconds = 0;
             _sumIterationsDurationInMilliseconds = 0;
 
+
+            base.SetWorkerHasStarted();
+        }
+
+        protected override void SetWorkerHasStopped()
+        {
             base.SetWorkerHasStopped();
         }
     }
