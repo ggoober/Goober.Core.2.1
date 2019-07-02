@@ -23,7 +23,7 @@ namespace Goober.RabbitMq.Internal.Implementation
 
         public override AckStrategy HandleConsumerError(ConsumerExecutionContext context, Exception exception)
         {
-            return AckStrategies.NackWithRequeue;
+            return AckStrategies.NackWithoutRequeue;
         }
     }
 }
