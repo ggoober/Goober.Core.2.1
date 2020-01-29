@@ -29,8 +29,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Goober.Core\Goober.Core.csproj" />
-    <ProjectReference Include="..\Goober.Logging\Goober.Logging.csproj" />
-    <ProjectReference Include="..\Goober.Swagger\Goober.Swagger.csproj" />
   </ItemGroup>
 
 </Project>

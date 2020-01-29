@@ -75,7 +75,7 @@ namespace Goober.Core.Services.Implementation
             }
 
 
-            var expensiveObject = await func().ConfigureAwait(false);
+            var expensiveObject = await func();
 
             var absoluteExpiration = new DateTimeOffset(DateTime.Now.AddMinutes(cacheTimeInMinutes));
 

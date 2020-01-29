@@ -1,31 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.705
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Core", "Goober.Core\Goober.Core.csproj", "{CB855313-05BE-4097-875E-227C52D90C75}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Core.Tests", "Goober.Core.Tests\Goober.Core.Tests.csproj", "{694F3A8B-586F-42C2-BE04-02D2349B2BCD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Swagger", "Goober.Swagger\Goober.Swagger.csproj", "{23855EE4-C71A-4F26-B10C-296F94CFF43E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Logging", "Goober.Logging\Goober.Logging.csproj", "{7050B6D5-28A2-4F1D-9BAF-BAA36A46261F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.WebApi", "Goober.WebApi\Goober.WebApi.csproj", "{08774B10-6348-4EC9-A1A5-094AFBAF7218}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.WebApp", "Goober.WebApp\Goober.WebApp.csproj", "{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.BackgroundWorker", "Goober.BackgroundWorker\Goober.BackgroundWorker.csproj", "{1286845C-B76F-4E53-99C3-0666D17E766C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.Logging.SimpleView", "Goober.Logger.SimpleView\Goober.Logging.SimpleView.csproj", "{07500F9C-7EC7-407A-BC0A-BBFD1429D502}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Goober.RabbitMq", "Goober.RabbitMq\Goober.RabbitMq.csproj", "{A13DA678-9AC5-41B4-B9E8-CDD2218A5FAD}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HowTo", "HowTo", "{699A35B1-FA63-4045-80BD-46ABA0C2AEAF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMq", "HowTo\RabbitMq\RabbitMq.csproj", "{454CC1CB-76C0-42CB-96B2-2A5515A8F989}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackgroundWorkers", "BackgroundWorkers\BackgroundWorkers.csproj", "{264A0929-D768-43BC-8CC2-58D564A9C50A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,49 +23,9 @@ Global
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{694F3A8B-586F-42C2-BE04-02D2349B2BCD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{23855EE4-C71A-4F26-B10C-296F94CFF43E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7050B6D5-28A2-4F1D-9BAF-BAA36A46261F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7050B6D5-28A2-4F1D-9BAF-BAA36A46261F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7050B6D5-28A2-4F1D-9BAF-BAA36A46261F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7050B6D5-28A2-4F1D-9BAF-BAA36A46261F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{08774B10-6348-4EC9-A1A5-094AFBAF7218}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{08774B10-6348-4EC9-A1A5-094AFBAF7218}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{08774B10-6348-4EC9-A1A5-094AFBAF7218}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{08774B10-6348-4EC9-A1A5-094AFBAF7218}.Release|Any CPU.Build.0 = Release|Any CPU
-		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{39CD07C9-C5E2-4B3F-B3E6-BEBBBCC127B9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1286845C-B76F-4E53-99C3-0666D17E766C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1286845C-B76F-4E53-99C3-0666D17E766C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1286845C-B76F-4E53-99C3-0666D17E766C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1286845C-B76F-4E53-99C3-0666D17E766C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{07500F9C-7EC7-407A-BC0A-BBFD1429D502}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07500F9C-7EC7-407A-BC0A-BBFD1429D502}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07500F9C-7EC7-407A-BC0A-BBFD1429D502}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07500F9C-7EC7-407A-BC0A-BBFD1429D502}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A13DA678-9AC5-41B4-B9E8-CDD2218A5FAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A13DA678-9AC5-41B4-B9E8-CDD2218A5FAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A13DA678-9AC5-41B4-B9E8-CDD2218A5FAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A13DA678-9AC5-41B4-B9E8-CDD2218A5FAD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{454CC1CB-76C0-42CB-96B2-2A5515A8F989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{454CC1CB-76C0-42CB-96B2-2A5515A8F989}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{454CC1CB-76C0-42CB-96B2-2A5515A8F989}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{454CC1CB-76C0-42CB-96B2-2A5515A8F989}.Release|Any CPU.Build.0 = Release|Any CPU
-		{264A0929-D768-43BC-8CC2-58D564A9C50A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{264A0929-D768-43BC-8CC2-58D564A9C50A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{264A0929-D768-43BC-8CC2-58D564A9C50A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{264A0929-D768-43BC-8CC2-58D564A9C50A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{454CC1CB-76C0-42CB-96B2-2A5515A8F989} = {699A35B1-FA63-4045-80BD-46ABA0C2AEAF}
-		{264A0929-D768-43BC-8CC2-58D564A9C50A} = {699A35B1-FA63-4045-80BD-46ABA0C2AEAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9343E23A-83B5-44E8-9692-91A08528E985}

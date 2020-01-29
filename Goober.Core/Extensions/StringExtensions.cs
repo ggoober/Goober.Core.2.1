@@ -5,7 +5,7 @@ namespace Goober.Core.Extensions
 {
     public static class StringExtensions
     {
-        private static Regex rxDoubleSpaces = new Regex("[ ]{2,}", RegexOptions.Compiled);
+        private static readonly Regex _rxDoubleSpaces = new Regex("[ ]{2,}", RegexOptions.Compiled);
 
         public static bool IsNullOrEmpty(this string value)
         {
@@ -35,7 +35,7 @@ namespace Goober.Core.Extensions
 
         public static string RemoveDoubleSpaces(this string value)
         {
-            return rxDoubleSpaces.Replace(value, " ");
+            return _rxDoubleSpaces.Replace(value, " ");
         }
 
         public static string SubstringSafety(this string str, int length)

@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Goober.BackgroundWorker\Goober.BackgroundWorker.csproj" />
     <ProjectReference Include="..\..\Goober.RabbitMq\Goober.RabbitMq.csproj" />
     <ProjectReference Include="..\..\Goober.WebApi\Goober.WebApi.csproj" />
   </ItemGroup>

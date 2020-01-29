@@ -6,7 +6,7 @@ namespace Goober.Core.Extensions
 {
     public static class JsonExtensions
     {
-        private static JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
         {
             Converters = new List<JsonConverter> { new StringEnumConverter() },
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
@@ -15,12 +15,12 @@ namespace Goober.Core.Extensions
 
         public static string Serialize(this object value)
         {
-            return JsonConvert.SerializeObject(value, JsonSerializerSettings);
+            return JsonConvert.SerializeObject(value, _jsonSerializerSettings);
         }
 
         public static T Deserialize<T>(this string value)
         {
-            return JsonConvert.DeserializeObject<T>(value, JsonSerializerSettings);
+            return JsonConvert.DeserializeObject<T>(value, _jsonSerializerSettings);
         }
     }
 }

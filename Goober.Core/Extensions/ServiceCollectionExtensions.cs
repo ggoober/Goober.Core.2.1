@@ -10,7 +10,7 @@ namespace Goober.Core.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        private static List<string> ServiceAndRepositoryPostfix = new List<string> { "Service", "Repository" };
+        private static readonly List<string> _serviceAndRepositoryPostfix = new List<string> { "Service", "Repository" };
 
         public static void RegisterClasses(this IServiceCollection services, 
             Assembly assembly, 
@@ -55,7 +55,7 @@ namespace Goober.Core.Extensions
         {
             RegisterClasses(services: services,
                 assembly: typeof(TAssemblyClassName).Assembly,
-                classesPostfix: classesPostfix ?? ServiceAndRepositoryPostfix,
+                classesPostfix: classesPostfix ?? _serviceAndRepositoryPostfix,
                 serviceLifetime: serviceLifetime,
                 optional: optional);
         }
